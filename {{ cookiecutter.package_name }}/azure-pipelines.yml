@@ -54,7 +54,7 @@ jobs:
       # Only Upload to PyPI on tags
       ${{ if startsWith(variables['Build.SourceBranch'], 'refs/tags/') }}:
         pypi_connection_name : 'PyPI'
-{% endraw -%}
+{% endraw %}
       test_extras: 'test'
       test_command: 'pytest -p no:warnings --doctest-rst -m "not figure" --pyargs {{ cookiecutter.module_name }}'
       submodules: false

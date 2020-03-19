@@ -9,10 +9,7 @@ This is the documentation for {{ cookiecutter.package_name }}.
    whatsnew/index
 
 
+Reference/API
+=============
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+.. automodapi:: {{ cookiecutter.package_name }}

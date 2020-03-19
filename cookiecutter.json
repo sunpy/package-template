@@ -10,9 +10,9 @@
     "use_compiled_extensions": "n",
     "include_example_code": "n",
 
-    "_sphinx_theme": "alabaster",
-    "_parent_project": "",
-    "_install_requires": "",
+    "_sphinx_theme": "sunpy",
+    "_parent_project": "sunpy",
+    "_install_requires": "sunpy",
     "_copy_without_render": [
         "docs/_templates",
         "docs/_static"

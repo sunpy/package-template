@@ -11,6 +11,7 @@
     "use_compiled_extensions": "n",
     "include_example_code": "n",
 
+    "_provide_setuppy_fallback": "n",
     "_sphinx_theme": "sunpy",
     "_parent_project": "sunpy",
     "_install_requires": "sunpy",

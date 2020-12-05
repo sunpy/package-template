@@ -136,3 +136,6 @@ dmypy.json
 
 # Vscode plugin
 .history/
+
+# Default params
+packagename

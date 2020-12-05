@@ -1,6 +1,5 @@
 import py
 import pytest
-import time
 
 import tox
 from _toxplugin import RunResult, reset_report

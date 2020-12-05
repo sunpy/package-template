@@ -1,6 +1,7 @@
-OpenAstronomy Packaging Guide
-=============================
+SunPy Packaging Template
+========================
 
-A guide to your packaging. For more info refer to the `docs <https://docs.sunpy.org/projects/package-template/en/latest/>`_!
+A cookiecutter template for a SunPy Affiliated or Sponsored Package.
+`For more info refer to the documentation <https://docs.sunpy.org/projects/package-template/en/latest/>`__!
 
-
+This project is based on the `OpenAstronomy Package Guide <https://packaging-guide.openastronomy.org/en/latest/#using-the-template>`__.

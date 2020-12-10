@@ -11,3 +11,8 @@ To generate a new package from the template first install `cookiecutter <https:/
 
 Once this will create you a new directory in your current directory named the same as the value of "packagename" you supplied.
 Change into this directory and run `git init` to make it into a git repository (this is needed for versioning to work).
+
+Rational
+--------
+
+STUFF

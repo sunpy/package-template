@@ -43,6 +43,10 @@ jobs:
       - linux: py38
         name: py38_test
 
+      - linux: py38
+        name: py38_test
+
+
       - linux: codestyle
         name: codestyle
 

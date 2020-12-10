@@ -1,11 +1,30 @@
-# -*- coding: utf-8 -*-
-#
-# Configuration file for the Sphinx documentation builder.
-#
-# This file does only contain a selection of the most common options. For a
-# full list see the documentation:
-# http://www.sphinx-doc.org/en/master/config
+"""
+Configuration file for the Sphinx documentation builder.
 
+isort:skip_file
+"""
+# flake8: NOQA: E402
+
+# -- stdlib imports ------------------------------------------------------------
+import os
+import sys
+import datetime
+from pkg_resources import get_distribution, DistributionNotFound
+
+# -- Check for dependencies ----------------------------------------------------
+
+doc_requires = get_distribution("{{ cookiecutter.module_name }}").requires(extras=("docs",))
+missing_requirements = []
+for requirement in doc_requires:
+    try:
+        get_distribution(requirement)
+    except Exception as e:
+        missing_requirements.append(requirement.name)
+if missing_requirements:
+    print(
+        f"The {', '.join(missing_requirements)} package(s) could not be found and "
+        "is needed to build the documentation, please install the 'docs' requirements.")
+    sys.exit(1)
 
 # -- Project information -----------------------------------------------------
 
@@ -19,6 +38,10 @@ release = __version__
 is_development = '.dev' in __version__
 
 # -- General configuration ---------------------------------------------------
+
+# Suppress warnings about overriding directives as we overload some of the
+# doctest extensions.
+suppress_warnings = ['app.add_directive',]
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -35,6 +58,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx_automodapi.automodapi',
     'sphinx_automodapi.smart_resolver',
+    'sunpy.util.sphinx.doctest',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -67,14 +91,14 @@ napoleon_google_docstring = False
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3/',
-               (None, 'http://data.astropy.org/intersphinx/python3.inv')),
-    'numpy': ('https://docs.scipy.org/doc/numpy/',
-              (None, 'http://data.astropy.org/intersphinx/numpy.inv')),
+               (None, 'http://www.astropy.org/astropy-data/intersphinx/python3.inv')),
+    'numpy': ('https://numpy.org/doc/stable/',
+              (None, 'http://www.astropy.org/astropy-data/intersphinx/numpy.inv')),
     'scipy': ('https://docs.scipy.org/doc/scipy/reference/',
-              (None, 'http://data.astropy.org/intersphinx/scipy.inv')),
+              (None, 'http://www.astropy.org/astropy-data/intersphinx/scipy.inv')),
     'matplotlib': ('https://matplotlib.org/',
-                   (None, 'http://data.astropy.org/intersphinx/matplotlib.inv')),
-    'astropy': ('http://docs.astropy.org/en/stable/', None),
+                   (None, 'http://www.astropy.org/astropy-data/intersphinx/matplotlib.inv')),
+    'astropy': ('https://docs.astropy.org/en/stable/', None),
     'sunpy': ('https://docs.sunpy.org/en/stable/', None)}
 
 # -- Options for HTML output -------------------------------------------------
@@ -82,10 +106,7 @@ intersphinx_mapping = {
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 {% if cookiecutter._sphinx_theme == "sunpy" %}
-try:
-    from sunpy_sphinx_theme.conf import *
-except ImportError:
-    html_theme = 'default'
+from sunpy_sphinx_theme.conf import *
 {% else %}
 html_theme = '{{ cookiecutter._sphinx_theme }}'
 {% endif %}
@@ -107,10 +128,8 @@ graphviz_dot_args = [
     '-Gfontname=Helvetica Neue, Helvetica, Arial, sans-serif'
 ]
 
+# -- Towncrier Changelog -------------------------------------------------------
 
-"""
-Write the latest changelog into the documentation.
-"""
 target_file = os.path.abspath("./whatsnew/latest_changelog.txt")
 try:
     from sunpy.util.towncrier import generate_changelog_for_docs

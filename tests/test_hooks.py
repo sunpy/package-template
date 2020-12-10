@@ -78,4 +78,3 @@ def test_other_licence(cookies):
 
     for name, lfile in license_files.items():
         assert cj.project.join("licenses", lfile).exists()
-

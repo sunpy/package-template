@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: {{ '${{ github.workflow }}-${{ github.ref }}' }}
   cancel-in-progress: true
 
 jobs:
@@ -29,7 +29,7 @@ jobs:
       envs: |
         - linux: py312
     secrets:
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      CODECOV_TOKEN: {{ '${{ secrets.CODECOV_TOKEN }}' }}
 
   sdist_verify:
     runs-on: ubuntu-latest
@@ -56,7 +56,7 @@ jobs:
         - macos: py310
         - linux: py310-oldestdeps
     secrets:
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      CODECOV_TOKEN: {{ '${{ secrets.CODECOV_TOKEN }}' }}
 
   docs:
     needs: [core]
@@ -84,7 +84,7 @@ jobs:
       envs: |
         - linux: py311-devdeps
     secrets:
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      CODECOV_TOKEN: {{ '${{ secrets.CODECOV_TOKEN }}' }}
 
   publish_pure:
     needs: [test]
@@ -95,4 +95,4 @@ jobs:
       test_command: 'pytest -p no:warnings --pyargs {{ cookiecutter.module_name }}'
       submodules: false
     secrets:
-      pypi_token: ${{ secrets.pypi_token }}
+      pypi_token: {{ '${{ secrets.pypi_token }}' }}

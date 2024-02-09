@@ -5,7 +5,6 @@ requires = [
   "wheel",
 {%- if cookiecutter.use_compiled_extensions == 'y' %}
   "extension-helpers",
-  "oldest-supported-numpy",
   "cython"
 {% endif -%}
 ]

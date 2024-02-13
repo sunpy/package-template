@@ -142,7 +142,7 @@ venv.bak/
 # Pyre type checker
 .pyre/
 
-# IDE 
+# IDE
 # PyCharm
 .idea
 

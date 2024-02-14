@@ -1,10 +1,10 @@
-This project is based upon the Open Astronomy package template
+This project is based upon the OpenAstronomy package template
 (https://github.com/open-astronomy/package-template/) which is licenced under the terms
 of the following licence.
 
 ---
 
-Copyright (c) 2018, Open Astronomy Developers
+Copyright (c) 2018, OpenAstronomy Developers
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,

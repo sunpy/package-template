@@ -4,8 +4,7 @@ exclude = [
   ".git,",
   "__pycache__",
   "build",
-  "sunpy/extern/**",
-  "sunpy/version.py",
+  "{{ cookiecutter.package_name }}/version.py",
 ]
 
 [lint]
@@ -34,11 +33,7 @@ extend-ignore = [
 "__init__.py" = ["E402", "F401", "F403"]
 "test_*.py" = ["B011", "D", "E402", "PGH001", "S101"]
 # Need to import clients to register them, but don't use them in file
-"sunpy/net/__init__.py" = ["F811"]
-# These files are allowed to use warnings.warn
-"sunpy/util/exceptions.py" = ["TID251"]
-"sunpy/util/tests/test_logger.py" = ["TID251"]
-"sunpy/util/decorators.py" = ["TID251"]
+"{{ cookiecutter.package_name }}/net/__init__.py" = ["F811"]
 
 [pydocstyle]
 convention = "numpy"

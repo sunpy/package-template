@@ -1,4 +1,4 @@
-Copyright (C) {% now 'utc', '%Y' %}, {{ cookiecutter.author_name }}
+Copyright (c) {% now 'utc', '%Y' %}, {{ cookiecutter.author_name }}
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:

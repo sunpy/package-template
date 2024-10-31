@@ -1,0 +1,54 @@
+{% set default_python = '3.12' %}
+name: Daily cron
+
+on:
+  workflow_dispatch:
+  schedule:
+    #        ┌───────── minute (0 - 59)
+    #        │ ┌───────── hour (0 - 23)
+    #        │ │ ┌───────── day of the month (1 - 31)
+    #        │ │ │ ┌───────── month (1 - 12 or JAN-DEC)
+    #        │ │ │ │ ┌───────── day of the week (0 - 6 or SUN-SAT)
+    - cron: '0 3 * * *' # run every day at 3am UTC
+  pull_request:
+    # We also want this workflow triggered if the 'Run cron CI' label is added
+    # or present when PR is updated
+    types:
+      - synchronize
+      - labeled
+  push:
+    # We want this workflow to always run on release branches as well as
+    # all tags since we want to be really sure we don't introduce
+    # regressions on the release branches, and it's also important to run
+    # this on pre-release and release tags.
+    branches:
+      - 'main'
+      - '*.*'
+      - '!*backport*'
+    tags:
+      - 'v*'
+      - '!*dev*'
+      - '!*pre*'
+      - '!*post*'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  cron:
+    # Run on all triggers other than pull_request unless there's a label
+    if: (github.repository == '{{ cookiecutter.github_repo }}' && (github.event_name == 'schedule' || github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'Run cron CI')))
+    uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@main
+    with:
+      default_python: '{{ default_python }}'
+      submodules: false
+      coverage: codecov
+      toxdeps: tox-pypi-filter
+      envs: |
+        - linux: py311-devdeps
+    secrets:
+      CODECOV_TOKEN: {{ '${{ secrets.CODECOV_TOKEN }}' }}

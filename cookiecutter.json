@@ -45,5 +45,21 @@
         "documentation_url": "Documentation URL, optional",
         "changelog_url": "URL to the changelog, optional",
         "issue_tracker_url": "URL to the issue tracker, optional"
-    }
+    },
+    "all_repos" : [
+        "sunpy/sunpy",
+        "sunpy/ndcube",
+        "sunpy/sunkit-magex",
+        "sunpy/streamtracer",
+        "sunpy/sunkit-dem",
+        "sunpy/mpl-animators",
+        "sunpy/sunkit-image",
+        "sunpy/sunkit-pyvista",
+        "sunpy/sunpy-soar",
+        "sunpy/sunkit-instruments",
+        "sunpy/drms",
+        "sunpy/sunraster",
+        "sunpy/sunkit-spex",
+        "sunpy/radiospectra"
+    ]
 }

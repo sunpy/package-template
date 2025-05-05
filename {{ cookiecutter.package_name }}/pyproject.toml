@@ -89,16 +89,6 @@ version_file = "{{ cookiecutter.module_name }}/_version.py"
 version_file = "{{ cookiecutter.module_name }}/version.py"
 {%- endif %}
 
-[tool.pytest.ini_options]
-testpaths = [
-  "{{ cookiecutter.module_name }}",
-  "docs",
-]
-doctest_plus = "enabled"
-text_file_format = "rst"
-addopts = "--doctest-rst"
-norecursedirs = ["{{ cookiecutter.module_name }}[\\/]_dev"]
-
 [tool.gilesbot]
   [tool.gilesbot.pull_requests]
   enabled = true

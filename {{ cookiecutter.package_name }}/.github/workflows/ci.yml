@@ -1,4 +1,4 @@
-# Main CI Workflow {%- set default_python = '3.12' %}
+# Main CI Workflow {%- set default_python = '3.13' %}
 name: CI
 
 on:
@@ -108,10 +108,10 @@ jobs:
       test_command: 'pytest -p no:warnings --doctest-rst --pyargs {{ cookiecutter.module_name }}'
       submodules: false
       targets: |
-        - cp3{9,10,11,12}-manylinux*_x86_64
-        - cp3{9,10,11,12}-macosx_x86_64
-        - cp3{9,10,11,12}-macosx_arm64
-        - cp3{9,10,11,12}-win_amd64
+        - cp3{9,10,11,12,13,14}-manylinux*_x86_64
+        - cp3{9,10,11,12,13,14}-macosx_x86_64
+        - cp3{9,10,11,12,13,14}-macosx_arm64
+        - cp3{9,10,11,12,13,14}-win_amd64
 {%- else %}
     uses: OpenAstronomy/github-actions-workflows/.github/workflows/publish_pure_python.yml@v1
     with:

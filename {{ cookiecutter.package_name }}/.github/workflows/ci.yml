@@ -1,4 +1,4 @@
-# Main CI Workflow {%- set default_python = '3.13' %}
+# Main CI Workflow {%- set default_python = '3.12' %}
 name: CI
 
 on:
@@ -15,6 +15,13 @@ on:
   pull_request:
   # Allow manual runs through the web UI
   workflow_dispatch:
+  schedule:
+    #        ┌───────── minute (0 - 59)
+    #        │ ┌───────── hour (0 - 23)
+    #        │ │ ┌───────── day of the month (1 - 31)
+    #        │ │ │ ┌───────── month (1 - 12 or JAN-DEC)
+    #        │ │ │ │ ┌───────── day of the week (0 - 6 or SUN-SAT)
+    - cron: '0 7 * * 3'  # Every Wed at 07:00 UTC
 
 concurrency:
   group: {{ '${{ github.workflow }}-${{ github.ref }}' }}
@@ -22,13 +29,13 @@ concurrency:
 
 jobs:
   core:
-    uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@v1
+    uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@v2
     with:
       submodules: false
       coverage: codecov
       toxdeps: tox-pypi-filter
       envs: |
-        - linux: py312
+        - linux: py313
     secrets:
       CODECOV_TOKEN: {{ '${{ secrets.CODECOV_TOKEN }}' }}
 
@@ -54,14 +61,15 @@ jobs:
       posargs: -n auto
       envs: |
         - windows: py311
-        - macos: py310
+        - macos: py312
         - linux: py310-oldestdeps
+        - linux: py313-devdeps
     secrets:
       CODECOV_TOKEN: {{ '${{ secrets.CODECOV_TOKEN }}' }}
 
   docs:
     needs: [core]
-    uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@v1
+    uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@v2
     with:
       default_python: '{{ default_python }}'
       submodules: false
@@ -72,23 +80,6 @@ jobs:
           - graphviz
       envs: |
         - linux: build_docs
-
-  cron:
-    if: |
-      github.event_name == 'workflow_dispatch' || (
-        github.event_name == 'pull_request' &&
-        contains(github.event.pull_request.labels.*.name, 'Run cron CI')
-      )
-    uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@v1
-    with:
-      default_python: '{{ default_python }}'
-      submodules: false
-      coverage: codecov
-      toxdeps: tox-pypi-filter
-      envs: |
-        - linux: py311-devdeps
-    secrets:
-      CODECOV_TOKEN: {{ '${{ secrets.CODECOV_TOKEN }}' }}
 
   publish:
     # Build wheels on PRs only when labelled. Releases will only be published if tagged ^v.*
@@ -101,19 +92,19 @@ jobs:
       )
     needs: [test, docs]
 {%- if cookiecutter.use_compiled_extensions == 'y' %}
-    uses: OpenAstronomy/github-actions-workflows/.github/workflows/publish.yml@v1
+    uses: OpenAstronomy/github-actions-workflows/.github/workflows/publish.yml@v2
     with:
       sdist: true
       test_extras: 'tests'
       test_command: 'pytest -p no:warnings --doctest-rst --pyargs {{ cookiecutter.module_name }}'
       submodules: false
       targets: |
-        - cp3{9,10,11,12,13,14}-manylinux*_x86_64
-        - cp3{9,10,11,12,13,14}-macosx_x86_64
-        - cp3{9,10,11,12,13,14}-macosx_arm64
-        - cp3{9,10,11,12,13,14}-win_amd64
+        - cp3{10,11,12,13,14}-manylinux*_x86_64
+        - cp3{10,11,12,13,14}-macosx_x86_64
+        - cp3{10,11,12,13,14}-macosx_arm64
+        - cp3{10,11,12,13,14}-win_amd64
 {%- else %}
-    uses: OpenAstronomy/github-actions-workflows/.github/workflows/publish_pure_python.yml@v1
+    uses: OpenAstronomy/github-actions-workflows/.github/workflows/publish_pure_python.yml@v2
     with:
       python-version: '{{ default_python }}'
       test_extras: 'tests'

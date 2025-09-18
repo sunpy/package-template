@@ -18,6 +18,7 @@ jobs:
         - macos: py311-test
         - linux: py312-test
         - linux: py313-test
+        - linux: py314-test
         - linux: build_docs
 
   bake_cookies:

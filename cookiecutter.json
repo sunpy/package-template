@@ -21,8 +21,8 @@
     "minimum_python_version": [
         "3.11",
         "3.12",
-	    "3.13",
-	    "3.14"
+        "3.13",
+        "3.14"
     ],
     "use_compiled_extensions": "n",
     "enable_dynamic_dev_versions": "n",

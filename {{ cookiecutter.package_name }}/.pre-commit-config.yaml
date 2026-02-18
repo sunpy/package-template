@@ -30,6 +30,12 @@ repos:
     hooks:
       - id: codespell
         args: [ "--write-changes" ]
+  - repo: meta
+    hooks:
+      - id: check-hooks-apply
+      # Uncomment this check for excludes which do nothing
+      # - id: check-useless-excludes
+
 ci:
   autofix_prs: false
   autoupdate_schedule: "quarterly"

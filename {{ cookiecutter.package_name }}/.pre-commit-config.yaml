@@ -33,7 +33,8 @@ repos:
   - repo: meta
     hooks:
       - id: check-hooks-apply
-      - id: check-useless-excludes
+      # Uncomment this check for excludes which do nothing
+      # - id: check-useless-excludes
 
 ci:
   autofix_prs: false

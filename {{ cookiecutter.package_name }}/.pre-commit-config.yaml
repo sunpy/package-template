@@ -1,3 +1,4 @@
+files: ^{{ cookiecutter.module_name }}/(?!(extern|data)/)
 repos:
     # This should be before any formatting hooks like isort
   - repo: https://github.com/astral-sh/ruff-pre-commit
@@ -6,7 +7,7 @@ repos:
       - id: ruff
         args: ["--fix"]
         types: [python]
-        files: ^{{ cookiecutter.module_name }}/(?!(extern|io/src/ana)/)
+
   - repo: https://github.com/PyCQA/isort
     rev: 7.0.0
     hooks:
@@ -22,26 +23,24 @@ repos:
         types: [python]
       - id: trailing-whitespace
         types_or: [python, rst]
-        files: ^{{ cookiecutter.module_name }}/(?!(data|extern|io/src/ana)/)
       - id: check-yaml
         types: [yaml]
       - id: debug-statements
         types: [python]
       - id: check-added-large-files
         args: ["--enforce-all", "--maxkb=1054"]
+        # Override top level to check all files
+        files: ""
       - id: end-of-file-fixer
         types_or: [python, rst]
-        files: ^{{ cookiecutter.module_name }}/(?!(data|extern|io/src/ana)/)
       - id: mixed-line-ending
         types_or: [python, rst]
-        files: ^{{ cookiecutter.module_name }}/(?!(data|extern|io/src/ana)/)
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.1
     hooks:
       - id: codespell
         args: [ "--write-changes" ]
         types_or: [python, rst]
-        files: ^{{ cookiecutter.module_name }}/(?!(data|extern|io/src/ana)/)
   - repo: meta
     hooks:
       - id: check-hooks-apply

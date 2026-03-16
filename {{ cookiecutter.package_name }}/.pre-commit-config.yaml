@@ -50,8 +50,8 @@ repos:
   - repo: meta
     hooks:
       - id: check-hooks-apply
-      # Uncomment to make sure the ecludes match something
-      # - id: check-useless-excludes
+      # This may fail if you do not have matching files in the data/ or extern/ directories
+      - id: check-useless-excludes
 ci:
   autofix_prs: false
   autoupdate_schedule: "quarterly"

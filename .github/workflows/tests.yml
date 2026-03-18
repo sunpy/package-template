@@ -27,5 +27,6 @@ jobs:
     with:
       artifact-path: |
         cookies
+        cookies/.**
       envs: |
         - linux: bake_cookies

@@ -23,7 +23,7 @@ For more information on contributing to SunPy, please read our `Newcomers' guide
 
 .. _Developers Guide: https://docs.sunpy.org/en/latest/dev_guide/index.html
 .. _`#sunpy:openastronomy.org`: https://app.element.io/#/room/#sunpy:openastronomy.org
-.. _issues page: https://github.com/sunpy/sunkit-pyvista/issues
+.. _issues page: {{ cookiecutter.issue_tracker_url }}
 .. _Newcomers' guide: https://docs.sunpy.org/en/latest/dev_guide/contents/newcomers.html
 
 When you are interacting with the SunPy community you are asked at to follow our `code of conduct <https://sunpy.org/coc>`__.

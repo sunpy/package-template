@@ -152,7 +152,7 @@ jobs:
                 repo: variables.name,
                 body: issue_body,
                 title: variables.title,
-                labels: [variables.label],
+                labels: [variables.label, "pre-commit.ci autofix"],
               });
             } else {
               await github.rest.issues.update({

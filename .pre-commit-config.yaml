@@ -1,4 +1,9 @@
 repos:
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: v1.23.1
+    hooks:
+      - id: zizmor
+        exclude: "{{ cookiecutter.package_name }}/.github/workflows/ci.yml"
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:

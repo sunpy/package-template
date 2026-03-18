@@ -27,9 +27,11 @@ concurrency:
   group: {{ '${{ github.workflow }}-${{ github.ref }}' }}
   cancel-in-progress: true
 
+permissions: {}
+
 jobs:
   core:
-    uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@v2
+    uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@v2  # zizmor: ignore[unpinned-uses]
     with:
       submodules: false
       coverage: codecov
@@ -42,8 +44,10 @@ jobs:
   sdist_verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v6  # zizmor: ignore[unpinned-uses]
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6  # zizmor: ignore[unpinned-uses]
         with:
           python-version: '{{ default_python }}'
       - run: python -m pip install -U --user build
@@ -53,7 +57,7 @@ jobs:
 
   test:
     needs: [core, sdist_verify]
-    uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@v2
+    uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@v2  # zizmor: ignore[unpinned-uses]
     with:
       submodules: false
       coverage: codecov
@@ -70,7 +74,7 @@ jobs:
 
   docs:
     needs: [core]
-    uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@v2
+    uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@v2  # zizmor: ignore[unpinned-uses]
     with:
       default_python: '{{ default_python }}'
       submodules: false
@@ -93,7 +97,7 @@ jobs:
       )
     needs: [test, docs]
 {%- if cookiecutter.use_compiled_extensions == 'y' %}
-    uses: OpenAstronomy/github-actions-workflows/.github/workflows/publish.yml@v2
+    uses: OpenAstronomy/github-actions-workflows/.github/workflows/publish.yml@v2  # zizmor: ignore[unpinned-uses]
     with:
       sdist: true
       test_extras: 'tests'
@@ -105,7 +109,7 @@ jobs:
         - cp3{12,13,14}-macosx_arm64
         - cp3{12,13,14}-win_amd64
 {%- else %}
-    uses: OpenAstronomy/github-actions-workflows/.github/workflows/publish_pure_python.yml@v2
+    uses: OpenAstronomy/github-actions-workflows/.github/workflows/publish_pure_python.yml@v2  # zizmor: ignore[unpinned-uses]
     with:
       python-version: '{{ default_python }}'
       test_extras: 'tests'

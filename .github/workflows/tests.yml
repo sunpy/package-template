@@ -10,6 +10,8 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions: {}
+
 jobs:
   test:
     uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@a138926f6e4f9667d1306c24f24f5bdcaa01fbab  # v2.5.0

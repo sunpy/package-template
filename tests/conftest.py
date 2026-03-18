@@ -5,9 +5,7 @@ import tox  # noqa: F401
 from tox.pytest import init_fixture  # noqa: F401
 
 
-@pytest.fixture(params=["bake_default",
-                        "bake_examples_compiled",
-                        "bake_examples"])
+@pytest.fixture(params=["bake_default", "bake_examples_compiled", "bake_examples"])
 def cookiejar(request):
     """
     All the possible renders of the template.
@@ -15,7 +13,11 @@ def cookiejar(request):
     return request.getfixturevalue(request.param)
 
 
-@pytest.fixture(params=["bake_default", ])
+@pytest.fixture(
+    params=[
+        "bake_default",
+    ]
+)
 def cookiejar_no_examples(request):
     """
     Templates rendered without the examples
@@ -23,10 +25,14 @@ def cookiejar_no_examples(request):
     return request.getfixturevalue(request.param)
 
 
-@pytest.fixture(params=["bake_examples_compiled",
-                        "bake_examples",
-                        "bake_examples_compiled_dev_version",
-                        "bake_examples_url_extensions"])
+@pytest.fixture(
+    params=[
+        "bake_examples_compiled",
+        "bake_examples",
+        "bake_examples_compiled_dev_version",
+        "bake_examples_url_extensions",
+    ]
+)
 def cookiejar_examples(request):
     """
     Templates rendered with the examples
@@ -65,11 +71,16 @@ def bake_examples(cookies):
     """
     Examples on.
     """
-    result = cookies.bake(extra_context={"package_name": "example-package",
-                                         "module_name": "example_package",
-                                         "include_example_code": "y",
-                                         "author_name": "test",
-                                         "use_extended_ruff_linting": "y"})
+    result = cookies.bake(
+        extra_context={
+            "package_name": "example-package",
+            "module_name": "example_package",
+            "include_example_code": "y",
+            "author_name": "test",
+            "use_extended_ruff_linting": "y",
+            "issue_tracker_url": "https://github.com/sunpy/sunpy/issues",
+        }
+    )
     return _handle_cookiecutter_errors(result)
 
 
@@ -78,10 +89,15 @@ def bake_examples_compiled(cookies):
     """
     Examples on.
     """
-    result = cookies.bake(extra_context={"include_example_code": "y",
-                                         "use_compiled_extensions": "y",
-                                         "author_name": "test",
-                                         "use_extended_ruff_linting": "n"})
+    result = cookies.bake(
+        extra_context={
+            "include_example_code": "y",
+            "use_compiled_extensions": "y",
+            "author_name": "test",
+            "use_extended_ruff_linting": "n",
+            "issue_tracker_url": "https://github.com/sunpy/sunpy/issues",
+        }
+    )
     return _handle_cookiecutter_errors(result)
 
 
@@ -90,15 +106,18 @@ def bake_examples_compiled_dev_version(cookies):
     """
     Examples on.
     """
-    result = cookies.bake(extra_context={"include_example_code": "y",
-                                         "use_compiled_extensions": "y",
-                                         "enable_dynamic_dev_versions": "y",
-                                         "author_name": "test",
-                                         "include_cruft_update_github_workflow": "y",
-                                         "use_extended_ruff_linting": "y",
-                                         "download_url": "https://github.com/sunpy/sunpy/archive/master.zip",
-                                         "issue_tracker_url": "https://github.com/sunpy/sunpy/issues",
-    })
+    result = cookies.bake(
+        extra_context={
+            "include_example_code": "y",
+            "use_compiled_extensions": "y",
+            "enable_dynamic_dev_versions": "y",
+            "author_name": "test",
+            "include_cruft_update_github_workflow": "y",
+            "use_extended_ruff_linting": "y",
+            "download_url": "https://github.com/sunpy/sunpy/archive/master.zip",
+            "issue_tracker_url": "https://github.com/sunpy/sunpy/issues",
+        }
+    )
     return _handle_cookiecutter_errors(result)
 
 
@@ -107,16 +126,18 @@ def bake_examples_url_extensions(cookies):
     """
     setting url parameters
     """
-    result = cookies.bake(extra_context={
-        "author_name": "test",
-        "include_example_code": "y",
-        "project_url": "https://sunpy.org",
-        "github_repo": "sunpy/sunpy",
-        "download_url": "https://github.com/sunpy/sunpy/archive/master.zip",
-        "documentation_url": "https://sunpy.org/docs",
-        "changelog_url": "https://sunpy.org/changelog",
-        "issue_tracker_url": "https://github.com/sunpy/sunpy/issues"
-    })
+    result = cookies.bake(
+        extra_context={
+            "author_name": "test",
+            "include_example_code": "y",
+            "project_url": "https://sunpy.org",
+            "github_repo": "sunpy/sunpy",
+            "download_url": "https://github.com/sunpy/sunpy/archive/master.zip",
+            "documentation_url": "https://sunpy.org/docs",
+            "changelog_url": "https://sunpy.org/changelog",
+            "issue_tracker_url": "https://github.com/sunpy/sunpy/issues",
+        }
+    )
     return _handle_cookiecutter_errors(result)
 
 

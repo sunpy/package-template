@@ -1,5 +1,5 @@
 {{ cookiecutter.short_description }}
-{{ '-' * cookiecutter.short_description|length }}
+{{ '=' * cookiecutter.short_description|length }}
 
 Usage of Generative AI
 ----------------------
@@ -9,20 +9,24 @@ We expect authentic engagement in our community.
 If you use generative AI tools as an aid in developing code or documentation changes, ensure that you fully understand the proposed changes and can explain why they are the correct approach and an improvement to the current state.
 For more information see our documentation on fair and appropriate `AI usage <https://docs.sunpy.org/en/latest/dev_guide/contents/ai_usage.html>`__.
 
-License
--------
-
-This project is Copyright (c) {{ cookiecutter.author_name }} and licensed under
-the terms of the {{ cookiecutter.license }} license. This package is based upon
-the `Openastronomy packaging guide <https://github.com/OpenAstronomy/packaging-guide>`__
-which is licensed under the BSD 3-clause licence. See the licenses folder for
-more information.
-
 Contributing
 ------------
 
 We love contributions! {{ cookiecutter.package_name }} is open source,
 built on open source, and we'd love to have you hang out in our community.
+
+If you would like to get involved, check out the `Developers Guide`_ section of the SunPy docs.
+Stop by our chat room `#sunpy:openastronomy.org`_ if you have any questions.
+Help is always welcome so let us know what you like to work on, or check out the `issues page`_ for the list of known outstanding items.
+
+For more information on contributing to SunPy, please read our `Newcomers' guide`_.
+
+.. _Developers Guide: https://docs.sunpy.org/en/latest/dev_guide/index.html
+.. _`#sunpy:openastronomy.org`: https://app.element.io/#/room/#sunpy:openastronomy.org
+.. _issues page: {{ cookiecutter.issue_tracker_url }}
+.. _Newcomers' guide: https://docs.sunpy.org/en/latest/dev_guide/contents/newcomers.html
+
+When you are interacting with the SunPy community you are asked at to follow our `code of conduct <https://sunpy.org/coc>`__.
 
 **Imposter syndrome disclaimer**: We want your help. No, really.
 

@@ -55,3 +55,6 @@ if __name__ == '__main__':
         remove_dir('{{ cookiecutter.module_name }}/example_subpkg/')
         remove_file('{{ cookiecutter.module_name }}/example_mod.py')
         remove_file('{{ cookiecutter.module_name }}/tests/test_example.py')
+        remove_file('{{ cookiecutter.module_name }}/data/__init__.py')
+        remove_file('{{ cookiecutter.module_name }}/data/test.toml')
+        remove_file('{{ cookiecutter.module_name }}/data/test.yml')

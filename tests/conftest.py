@@ -79,6 +79,7 @@ def bake_examples(cookies):
             "author_name": "test",
             "use_extended_ruff_linting": "y",
             "issue_tracker_url": "https://github.com/sunpy/sunpy/issues",
+            "matrix_room_id": "!example:matrix.org",
         }
     )
     return _handle_cookiecutter_errors(result)

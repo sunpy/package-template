@@ -1,5 +1,7 @@
+``{{ cookiecutter.package_name }}``
+{{ '=' * cookiecutter.package_name|length }}====
+
 {{ cookiecutter.short_description }}
-{{ '=' * cookiecutter.short_description|length }}
 
 Usage of Generative AI
 ----------------------

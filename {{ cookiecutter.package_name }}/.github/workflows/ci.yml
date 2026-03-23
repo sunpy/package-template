@@ -137,8 +137,8 @@ jobs:
 
       - name: Run upload
         uses: pypa/gh-action-pypi-publish@v1.13.0  # zizmor: ignore[unpinned-uses]
+{%- if cookiecutter.matrix_room_id %}
 
-{% if cookiecutter.matrix_room_id -%}
   notify:
     if: {{ "${{ !cancelled() && (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') }}" }}
     needs: [build_dists]

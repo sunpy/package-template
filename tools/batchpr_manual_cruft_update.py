@@ -36,7 +36,6 @@ ALL_REPOS = (
     "sunpy/mpl-animators",
     "sunpy/sunkit-image",
     "sunpy/sunkit-pyvista",
-    "sunpy/sunpy-soar",
     "sunpy/sunkit-instruments",
     "sunpy/drms",
     "sunpy/sunraster",

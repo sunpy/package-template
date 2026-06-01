@@ -36,7 +36,6 @@ ALL_REPOS = (
     "sunpy/mpl-animators",
     "sunpy/sunkit-image",
     "sunpy/sunkit-pyvista",
-    "sunpy/sunpy-soar",
     "sunpy/sunkit-instruments",
     "sunpy/drms",
     "sunpy/sunraster",
@@ -53,10 +52,16 @@ class CruftUpdater(Updater):
         self.extra_context = extra_context
 
     def process_repo(self):
-        if self.cleanup_remote_branch:
-            out = self.run_command(f"git ls-remote --heads origin {self.branch_name}")
-            if out:
+        out = self.run_command(f"git ls-remote --heads origin {self.branch_name}")
+        cleanup_remote_branch = self.cleanup_remote_branch
+        if out:
+            if not cleanup_remote_branch:
+                should_delete = input(f"Remote branch {self.branch_name} exists for {self.fork.full_name}, should I remove it? [y/N]").lower()
+                cleanup_remote_branch = should_delete == "y"
+
+            if cleanup_remote_branch:
                 self.run_command(f'git push https://{self.user.login}:{self.token}@github.com/{self.fork.full_name} :{self.branch_name}')
+
         ret = update(skip_apply_ask=True, refresh_private_variables=True, extra_context=self.extra_context)
         if not ret:
             self.error(f"Cruft update failed for {self.repo}")

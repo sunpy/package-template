@@ -157,7 +157,7 @@ jobs:
           DRAFT="${{ steps.conflicts.outputs.merge_conflicts == '1' }}"
 
           # Check if PR already exists
-          EXISTING_PR=$(gh pr list --repo "$REPO_FULL" --head "${BOT}:cruft/update" --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
+          EXISTING_PR=$(gh pr list --repo "$REPO_FULL" --head "cruft/update" --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
 
           if [ -n "$EXISTING_PR" ]; then
             echo "PR #${EXISTING_PR} already exists, skipping creation."
@@ -168,7 +168,7 @@ jobs:
               --base main \
               --title "Updates from the package template" \
               --body "$PR_BODY" \
-              $([ "$DRAFT" = "true" ] && echo "--draft" || echo "")
+              $([ "$DRAFT" = "true" ] && echo "--draft" || echo "") || true
           fi
 
   report-fail:

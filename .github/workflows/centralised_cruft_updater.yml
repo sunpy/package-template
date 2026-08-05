@@ -44,6 +44,7 @@ jobs:
 
     environment:
       name: global-cruft-update
+      deployment: false
 
     steps:
       - name: Checkout target repo
@@ -77,25 +78,29 @@ jobs:
           git config --global user.email "sunpybot@users.noreply.github.com"
           git config --global user.name "SunPyBot"
 
-          python -c "
+          CRUFT_OUTPUT=$(python -c "
           import json, sys
           from cruft import update
           ret = update(skip_apply_ask=True, refresh_private_variables=True)
           print('CRUFT_RESULT=' + ('success' if ret else 'failed'))
-          "
+          " 2>&1)
+          echo "$CRUFT_OUTPUT"
 
           git restore --staged .
+
+          if echo "$CRUFT_OUTPUT" | grep -q "Failed to cleanly apply the update, there may be merge conflicts"; then
+            echo "merge_conflicts=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "merge_conflicts=0" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Detect merge conflicts
         if: steps.check.outputs.has_changes == '1'
         id: conflicts
         run: |
-          MERGE_CONFLICTS=0
-          if [ -n "$(git ls-files --unmerged)" ]; then
-            MERGE_CONFLICTS=1
-          fi
-          # Also check for conflict markers in tracked files
-          if git grep -l '^<<<<<<< ' -- '*.py' '*.yml' '*.yaml' '*.toml' '*.rst' '*.md' '*.cfg' '*.txt' '*.json' 2>/dev/null; then
+          MERGE_CONFLICTS="${{ steps.cruft_update.outputs.merge_conflicts }}"
+          # Also check for conflict markers in any tracked file
+          if git grep -l '^<<<<<<< ' 2>/dev/null; then
             MERGE_CONFLICTS=1
           fi
           echo "merge_conflicts=$MERGE_CONFLICTS" >> "$GITHUB_OUTPUT"

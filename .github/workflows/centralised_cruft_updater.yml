@@ -1,0 +1,210 @@
+# This workflow runs cruft update on all templated sponsored affiliated packages
+# and opens PRs from the SunPyBot forks. It uses two fine-grained PATs:
+# - BOT_FORK_PAT: scoped to SunPyBot's forks (contents: read/write)
+# - BOT_PR_PAT: scoped to sunpy org repos (pull requests: read/write, contents: read)
+
+name: Automatic Update from package template
+
+on:
+  workflow_dispatch:
+    inputs:
+      extra_context:
+        description: "JSON string of extra context to pass to cruft update (optional)"
+        required: false
+        default: ""
+  schedule:
+    #        ┌───────── minute (0 - 59)
+    #        │ ┌───────── hour (0 - 23)
+    #        │ │ ┌───────── day of the month (1 - 31)
+    #        │ │ │ ┌───────── month (1 - 12 or JAN-DEC)
+    #        │ │ │ │ ┌───────── day of the week (0 - 6 or SUN-SAT)
+    - cron: '0 7 * * 1'  # Every Monday at 7am UTC
+
+permissions: {}
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        repo:
+          - sunpy/sunpy
+          # - sunpy/ndcube
+          # - sunpy/sunkit-magex
+          # - sunpy/streamtracer
+          # - sunpy/sunkit-dem
+          # - sunpy/mpl-animators
+          # - sunpy/sunkit-image
+          # - sunpy/sunkit-pyvista
+          # - sunpy/sunkit-instruments
+          # - sunpy/drms
+          # - sunpy/sunraster
+          # - sunpy/sunkit-spex
+          # - sunpy/radiospectra
+
+    permissions:
+      contents: read
+
+    environment:
+      name: global-cruft-update
+
+    steps:
+      - name: Checkout target repo
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: ${{ matrix.repo }}
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install cruft
+        run: python -m pip install git+https://github.com/Cadair/cruft@patch-p1
+
+      - name: Check if update is available
+        id: check
+        run: |
+          CHANGES=0
+          if [ -f .cruft.json ]; then
+            if ! cruft check; then
+              CHANGES=1
+            fi
+          else
+            echo "No .cruft.json file"
+          fi
+          echo "has_changes=$CHANGES" >> "$GITHUB_OUTPUT"
+
+      - name: Run cruft update
+        if: steps.check.outputs.has_changes == '1'
+        id: cruft_update
+        run: |
+          git config --global user.email "sunpybot@users.noreply.github.com"
+          git config --global user.name "SunPyBot"
+
+          EXTRA_CONTEXT="${{ github.event.inputs.extra_context }}"
+          if [ -z "$EXTRA_CONTEXT" ]; then
+            python -c "
+            from cruft import update
+            ret = update(skip_apply_ask=True, refresh_private_variables=True)
+            print('CRUFT_RESULT=' + ('success' if ret else 'failed'))
+            "
+          else
+            python -c "
+            import json, sys
+            from cruft import update
+            extra = json.loads(sys.argv[1])
+            ret = update(skip_apply_ask=True, refresh_private_variables=True, extra_context=extra)
+            print('CRUFT_RESULT=' + ('success' if ret else 'failed'))
+            " "$EXTRA_CONTEXT"
+          fi
+
+          git restore --staged .
+
+      - name: Detect merge conflicts
+        if: steps.check.outputs.has_changes == '1'
+        id: conflicts
+        run: |
+          MERGE_CONFLICTS=0
+          if [ -n "$(git ls-files --unmerged)" ]; then
+            MERGE_CONFLICTS=1
+          fi
+          # Also check for conflict markers in tracked files
+          if git grep -l '^<<<<<<< ' -- '*.py' '*.yml' '*.yaml' '*.toml' '*.rst' '*.md' '*.cfg' '*.txt' '*.json' 2>/dev/null; then
+            MERGE_CONFLICTS=1
+          fi
+          echo "merge_conflicts=$MERGE_CONFLICTS" >> "$GITHUB_OUTPUT"
+
+      - name: Check if only .cruft.json is modified
+        if: steps.check.outputs.has_changes == '1'
+        id: cruft_json
+        run: |
+          git status --porcelain=1
+          if [[ "$(git status --porcelain=1)" == " M .cruft.json" ]]; then
+            echo "Only .cruft.json is modified. Exiting workflow early."
+            echo "has_changes=0" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changes=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup fork and push
+        if: steps.cruft_json.outputs.has_changes == '1'
+        env:
+          GH_TOKEN: ${{ secrets.BOT_FORK_PAT }}
+          BOT_FORK_PAT: ${{ secrets.BOT_FORK_PAT }}
+        run: |
+          REPO_FULL="${{ matrix.repo }}"
+          REPO_NAME="${REPO_FULL#*/}"
+          BOT="SunPyBot"
+
+          # Check if fork exists
+          FORK_EXISTS=$(gh api "repos/${BOT}/${REPO_NAME}" --jq '.full_name' 2>/dev/null || echo "")
+
+          if [ -z "$FORK_EXISTS" ]; then
+            echo "Creating fork..."
+            gh api "repos/${REPO_FULL}/forks" -X POST
+            # Wait for fork to be ready
+            sleep 10
+          fi
+
+          # Add fork as remote and push
+          git remote add fork "https://${BOT}:${BOT_FORK_PAT}@github.com/${BOT}/${REPO_NAME}.git"
+          git checkout -b cruft/update
+          git add .
+          git commit -m "Automatic package template update"
+          git push fork cruft/update --force
+
+      - name: Create pull request
+        if: steps.cruft_json.outputs.has_changes == '1'
+        env:
+          GH_TOKEN: ${{ secrets.BOT_PR_PAT }}
+          PR_BODY: "This is an autogenerated PR, which will applies the latest changes from the [SunPy Package Template](https://github.com/sunpy/package-template). If this pull request has been opened as a draft there are conflicts which need fixing.\n\n**To run the CI on this pull request you will need to close it and reopen it.**"
+        run: |
+          REPO_FULL="${{ matrix.repo }}"
+          BOT="SunPyBot"
+          DRAFT="${{ steps.conflicts.outputs.merge_conflicts == '1' }}"
+
+          # Check if PR already exists
+          EXISTING_PR=$(gh pr list --repo "$REPO_FULL" --head "${BOT}:cruft/update" --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
+
+          if [ -n "$EXISTING_PR" ]; then
+            echo "PR #${EXISTING_PR} already exists, skipping creation."
+          else
+            gh pr create \
+              --repo "$REPO_FULL" \
+              --head "${BOT}:cruft/update" \
+              --base main \
+              --title "Updates from the package template" \
+              --body "$PR_BODY" \
+              $([ "$DRAFT" = "true" ] && echo "--draft" || echo "")
+          fi
+
+  report-fail:
+    if: failure()
+    needs: [update]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Open issue on failure
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_BODY: "[Workflow Run URL](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n\nThe package update workflow failed for one or more repos."
+        run: |
+          TITLE="Package template auto-update failed"
+          LABEL="Infrastructure"
+
+          # Search for existing open issue
+          EXISTING=$(gh search issues --repo ${{ github.repository }} --state open --match title "$TITLE" --json number --jq '.[0].number' 2>/dev/null || echo "")
+
+          if [ -z "$EXISTING" ]; then
+            gh issue create \
+              --repo ${{ github.repository }} \
+              --title "$TITLE" \
+              --body "$ISSUE_BODY" \
+              --label "$LABEL"
+          else
+            gh issue edit "$EXISTING" \
+              --repo ${{ github.repository }} \
+              --body "$ISSUE_BODY"
+          fi

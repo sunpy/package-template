@@ -33,7 +33,8 @@ jobs:
       - name: Set repo list
         id: set-repos
         run: |
-          echo 'repo_list=["sunpy/sunpy","sunpy/ndcube","sunpy/sunkit-magex","sunpy/streamtracer","sunpy/sunkit-dem","sunpy/mpl-animators","sunpy/sunkit-image","sunpy/sunkit-pyvista","sunpy/sunkit-instruments","sunpy/drms","sunpy/sunraster","sunpy/sunkit-spex","sunpy/radiospectra"]' >> "$GITHUB_OUTPUT"
+          # echo 'repo_list=["sunpy/sunpy","sunpy/ndcube","sunpy/sunkit-magex","sunpy/streamtracer","sunpy/sunkit-dem","sunpy/mpl-animators","sunpy/sunkit-image","sunpy/sunkit-pyvista","sunpy/sunkit-instruments","sunpy/drms","sunpy/sunraster","sunpy/sunkit-spex","sunpy/radiospectra"]' >> "$GITHUB_OUTPUT"
+          echo 'repo_list=["sunpy/mpl-animators"]' >> "$GITHUB_OUTPUT"
 
   update:
     name: Update ${{ matrix.repo }}

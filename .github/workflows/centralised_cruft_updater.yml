@@ -16,10 +16,15 @@ on:
     #        │ │ │ │ ┌───────── day of the week (0 - 6 or SUN-SAT)
     - cron: '0 7 * * 1'  # Every Monday at 7am UTC
 
+concurrency:
+  group: cruft-update
+  cancel-in-progress: false
+
 permissions: {}
 
 jobs:
   update:
+    name: Update ${{ matrix.repo }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -78,12 +83,7 @@ jobs:
           git config --global user.email "sunpybot@users.noreply.github.com"
           git config --global user.name "SunPyBot"
 
-          CRUFT_OUTPUT=$(python -c "
-          import json, sys
-          from cruft import update
-          ret = update(skip_apply_ask=True, refresh_private_variables=True)
-          print('CRUFT_RESULT=' + ('success' if ret else 'failed'))
-          " 2>&1)
+          CRUFT_OUTPUT=$(cruft update --skip-apply-ask --refresh-private-variables 2>&1) || true
           echo "$CRUFT_OUTPUT"
 
           git restore --staged .
@@ -97,6 +97,8 @@ jobs:
       - name: Detect merge conflicts
         if: steps.check.outputs.has_changes == '1'
         id: conflicts
+        env:
+          STEPS_CRUFT_UPDATE_OUTPUTS_MERGE_CONFLICTS: ${{ steps.cruft_update.outputs.merge_conflicts }}
         run: |
           MERGE_CONFLICTS="${STEPS_CRUFT_UPDATE_OUTPUTS_MERGE_CONFLICTS}"
           # Also check for conflict markers in any tracked file
@@ -104,8 +106,6 @@ jobs:
             MERGE_CONFLICTS=1
           fi
           echo "merge_conflicts=$MERGE_CONFLICTS" >> "$GITHUB_OUTPUT"
-        env:
-          STEPS_CRUFT_UPDATE_OUTPUTS_MERGE_CONFLICTS: ${{ steps.cruft_update.outputs.merge_conflicts }}
 
       - name: Check if only .cruft.json is modified
         if: steps.check.outputs.has_changes == '1'
@@ -172,6 +172,7 @@ jobs:
           fi
 
   report-fail:
+    name: Report failure
     if: failure()
     needs: [update]
     runs-on: ubuntu-latest

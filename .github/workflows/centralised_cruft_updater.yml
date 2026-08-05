@@ -51,6 +51,9 @@ jobs:
       name: global-cruft-update
       deployment: false
 
+    outputs:
+      created_pr_number: ${{ steps.create_pr.outputs.pr_number }}
+
     env:
       REPO_FULL: ${{ matrix.repo }}
       BOT: "SunPyBot"
@@ -193,13 +196,35 @@ jobs:
         run: |
           DRAFT="${{ steps.conflicts.outputs.merge_conflicts == '1' }}"
 
-          gh pr create \
+          PR_URL=$(gh pr create \
             --repo "$REPO_FULL" \
             --head "${BOT}:${BRANCH}" \
             --base main \
             --title "Updates from the package template" \
             --body "$PR_BODY" \
-            $([ "$DRAFT" = "true" ] && echo "--draft" || echo ""
+            $([ "$DRAFT" = "true" ] && echo "--draft" || echo ""))
+          PR_NUMBER="${PR_URL##*/}"
+          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+
+  # This ludicrous situation is a limitation of the fine-grained PATs created to do the previous job.
+  # I don't want to add this to the previous job as I would like to reduce the complexity of the thing done inside this environment.
+  allow-edits:
+    name: Allow maintainer edit
+    needs: [update]
+    if: needs.update.outputs.created_pr_number
+    runs-on: ubuntu-latest
+    permissions: {}
+    environment:
+      name: classic-pat
+      deployment: false
+
+    steps:
+      - name: Modify created PR
+        env:
+          PR_NUMBER: ${{ needs.update.outputs.created_pr_number }}
+          REPO_NAME: ${{ matrix.repo_name }}
+          GH_TOKEN: ${{ secrets.classic_pat }}
+        run: gh api --method PATCH "/repos/$REPO_NAME/pulls/$PR_NUMBER" -f maintainer_can_modify=true
 
   report-fail:
     name: Report failure

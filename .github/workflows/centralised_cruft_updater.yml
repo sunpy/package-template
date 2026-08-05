@@ -167,6 +167,7 @@ jobs:
         if: steps.cruft_json.outputs.has_changes == '1'
         env:
           BOT_FORK_PAT: ${{ secrets.BOT_FORK_PAT }}
+          EXISTING_PR: ${{ secrets.existing.outputs.existing_pr }}
         run: |
           # Create or switch to cruft/update branch
           if git rev-parse --verify $BRANCH >/dev/null 2>&1; then
@@ -177,7 +178,11 @@ jobs:
 
           git add .
           git commit -m "Automatic package template update" || echo "No changes to commit"
-          git push fork $BRANCH --force-with-lease
+          if [[ $EXISTING_PR -gt 0 ]]; then
+            git push fork $BRANCH --force-with-lease
+          else
+            git push fork $BRANCH --force
+          fi
 
       - name: Create pull request
         if: steps.cruft_json.outputs.has_changes == '1' && steps.existing.outputs.existing_pr == '0'

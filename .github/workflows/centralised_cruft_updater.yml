@@ -6,6 +6,7 @@
 name: Automatic Update from package template
 
 on:
+  push:
   workflow_dispatch:
   schedule:
     #        ┌───────── minute (0 - 59)

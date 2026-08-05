@@ -58,6 +58,10 @@ jobs:
       BRANCH: "cruft/update"
 
     steps:
+      - name: Set safe repo name
+        id: safe
+        run: echo "name=${REPO_FULL//\//-}" >> "$GITHUB_OUTPUT"
+
       - name: Checkout target repo
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -208,7 +212,7 @@ jobs:
         if: always()
         run: |
           mkdir -p status
-          cat > status/${{ matrix.repo }}.json <<EOF
+          cat > status/${{ steps.safe.outputs.name }}.json <<EOF
           {
             "repo": "${{ matrix.repo }}",
             "status": "${{ job.status }}",
@@ -223,7 +227,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: status-${{ matrix.repo }}
+          name: status-${{ steps.safe.outputs.name }}
           path: status/
           retention-days: 1
 

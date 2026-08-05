@@ -204,6 +204,29 @@ jobs:
           PR_NUMBER="${PR_URL##*/}"
           echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
 
+      - name: Prepare status for collation
+        if: always()
+        run: |
+          mkdir -p status
+          cat > status/${{ matrix.repo }}.json <<EOF
+          {
+            "repo": "${{ matrix.repo }}",
+            "status": "${{ job.status }}",
+            "has_changes": "${{ steps.cruft_json.outputs.has_changes }}",
+            "merge_conflicts": "${{ steps.conflicts.outputs.merge_conflicts }}",
+            "pr_number": "${{ steps.create_pr.outputs.pr_number }}",
+            "run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          }
+          EOF
+
+      - name: Upload status artifact
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: status-${{ matrix.repo }}
+          path: status/
+          retention-days: 1
+
   # This ludicrous situation is a limitation of the fine-grained PATs created to do the previous job.
   # I don't want to add this to the previous job as I would like to reduce the complexity of the thing done inside this environment.
   allow-edits:
@@ -251,10 +274,71 @@ jobs:
               }
             }
 
+  collate:
+    name: Collate results
+    needs: [update, setup]
+    if: always()
+    runs-on: ubuntu-latest
+    outputs:
+      summary: ${{ steps.build-summary.outputs.summary }}
+
+    steps:
+      - name: Download status artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: status/
+          pattern: status-*
+          merge-multiple: true
+
+      - name: Build summary
+        id: build-summary
+        run: |
+          SUMMARY="**[Workflow Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})**
+
+          | Repository | Status | Conflicts | PR | Logs |
+          |------------|--------|-----------|----|------|"
+
+          for file in status/*.json; do
+            REPO=$(jq -r '.repo' "$file")
+            STATUS=$(jq -r '.status' "$file")
+            HAS_CHANGES=$(jq -r '.has_changes' "$file")
+            MERGE_CONFLICTS=$(jq -r '.merge_conflicts' "$file")
+            PR_NUM=$(jq -r '.pr_number' "$file")
+            RUN_URL=$(jq -r '.run_url' "$file")
+
+            if [ "$STATUS" = "success" ]; then
+              STATUS_ICON="✅ Success"
+            else
+              STATUS_ICON="❌ Failed"
+            fi
+
+            if [ "$HAS_CHANGES" = "1" ]; then
+              if [ "$MERGE_CONFLICTS" = "1" ]; then
+                CONFLICT="⚠️ Conflicts"
+              else
+                CONFLICT="✅ No conflicts"
+              fi
+            else
+              CONFLICT="— No changes"
+            fi
+
+            if [ -n "$PR_NUM" ] && [ "$PR_NUM" != "null" ] && [ "$PR_NUM" != "" ]; then
+              PR_LINK="[#${PR_NUM}](https://github.com/${REPO}/pull/${PR_NUM})"
+            else
+              PR_LINK="—"
+            fi
+
+            SUMMARY="${SUMMARY}
+          | ${REPO} | ${STATUS_ICON} | ${CONFLICT} | ${PR_LINK} | [Logs](${RUN_URL}) |"
+          done
+
+          echo "$SUMMARY" >> "$GITHUB_STEP_SUMMARY"
+          echo "summary=$(echo "$SUMMARY" | jq -Rs .)" >> "$GITHUB_OUTPUT"
+
   report-fail:
     name: Report failure
     if: failure()
-    needs: [update, setup]
+    needs: [update, setup, collate]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -264,10 +348,16 @@ jobs:
       - name: Open issue on failure
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ISSUE_BODY: "[Workflow Run URL](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n\nThe package update workflow failed for one or more repos."
+          SUMMARY: ${{ needs.collate.outputs.summary }}
         run: |
           TITLE="Package template auto-update failed"
           LABEL="github_actions"
+
+          BODY="[Workflow Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+          The package template auto-update workflow completed with failures.
+
+          $(echo "$SUMMARY" | jq -r .)"
 
           # Search for existing open issue
           EXISTING=$(gh search issues --repo ${{ github.repository }} --state open --match title "$TITLE" --json number --jq '.[0].number' 2>/dev/null || echo "")
@@ -276,10 +366,10 @@ jobs:
             gh issue create \
               --repo ${{ github.repository }} \
               --title "$TITLE" \
-              --body "$ISSUE_BODY" \
+              --body "$BODY" \
               --label "$LABEL"
           else
             gh issue edit "$EXISTING" \
               --repo ${{ github.repository }} \
-              --body "$ISSUE_BODY"
+              --body "$BODY"
           fi

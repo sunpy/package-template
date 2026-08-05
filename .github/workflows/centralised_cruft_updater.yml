@@ -2,11 +2,11 @@
 # and opens PRs from the SunPyBot forks. It uses two fine-grained PATs:
 # - BOT_FORK_PAT: scoped to SunPyBot's forks (contents: read/write)
 # - BOT_PR_PAT: scoped to sunpy org repos (pull requests: read/write, contents: read)
+# and also a classic PAT to allow maintainer access to PRs
 
-name: Automatic Update from package template
+name: Update all packages with package template
 
 on:
-  push:
   workflow_dispatch:
   schedule:
     #        ┌───────── minute (0 - 59)
@@ -212,16 +212,23 @@ jobs:
         if: always()
         run: |
           mkdir -p status
-          cat > status/${{ steps.safe.outputs.name }}.json <<EOF
+          cat > status/${STEPS_SAFE_OUTPUTS_NAME}.json <<EOF
           {
-            "repo": "${{ matrix.repo }}",
-            "status": "${{ job.status }}",
-            "has_changes": "${{ steps.cruft_json.outputs.has_changes }}",
-            "merge_conflicts": "${{ steps.conflicts.outputs.merge_conflicts }}",
-            "pr_number": "${{ steps.create_pr.outputs.pr_number }}",
+            "repo": "${MATRIX_REPO}",
+            "status": "${JOB_STATUS}",
+            "has_changes": "${STEPS_CRUFT_JSON_OUTPUTS_HAS_CHANGES}",
+            "merge_conflicts": "${STEPS_CONFLICTS_OUTPUTS_MERGE_CONFLICTS}",
+            "pr_number": "${STEPS_CREATE_PR_OUTPUTS_PR_NUMBER}",
             "run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           }
           EOF
+        env:
+          STEPS_SAFE_OUTPUTS_NAME: ${{ steps.safe.outputs.name }}
+          MATRIX_REPO: ${{ matrix.repo }}
+          JOB_STATUS: ${{ job.status }}
+          STEPS_CRUFT_JSON_OUTPUTS_HAS_CHANGES: ${{ steps.cruft_json.outputs.has_changes }}
+          STEPS_CONFLICTS_OUTPUTS_MERGE_CONFLICTS: ${{ steps.conflicts.outputs.merge_conflicts }}
+          STEPS_CREATE_PR_OUTPUTS_PR_NUMBER: ${{ steps.create_pr.outputs.pr_number }}
 
       - name: Upload status artifact
         if: always()

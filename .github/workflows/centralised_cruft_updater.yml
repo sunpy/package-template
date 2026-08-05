@@ -193,25 +193,13 @@ jobs:
         run: |
           DRAFT="${{ steps.conflicts.outputs.merge_conflicts == '1' }}"
 
-          PR_NUMBER=$(gh pr create \
+          gh pr create \
             --repo "$REPO_FULL" \
             --head "${BOT}:${BRANCH}" \
             --base main \
             --title "Updates from the package template" \
             --body "$PR_BODY" \
-            $([ "$DRAFT" = "true" ] && echo "--draft" || echo "") \
-            --json number --jq '.number')
-          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
-
-      - name: Allow maintainer edits
-        if: steps.create_pr.outputs.pr_number != ''
-        env:
-          GH_TOKEN: ${{ secrets.BOT_PR_PAT }}
-        run: |
-          gh api \
-            --method PATCH \
-            "/repos/${REPO_FULL}/pulls/${{ steps.create_pr.outputs.pr_number }}" \
-            -f maintainer_can_modify=true
+            $([ "$DRAFT" = "true" ] && echo "--draft" || echo ""
 
   report-fail:
     name: Report failure

@@ -23,26 +23,26 @@ concurrency:
 permissions: {}
 
 jobs:
+  setup:
+    name: Setup
+    runs-on: ubuntu-latest
+    outputs:
+      repo_list: ${{ steps.set-repos.outputs.repo_list }}
+
+    steps:
+      - name: Set repo list
+        id: set-repos
+        run: |
+          echo 'repo_list=["sunpy/sunpy","sunpy/ndcube","sunpy/sunkit-magex","sunpy/streamtracer","sunpy/sunkit-dem","sunpy/mpl-animators","sunpy/sunkit-image","sunpy/sunkit-pyvista","sunpy/sunkit-instruments","sunpy/drms","sunpy/sunraster","sunpy/sunkit-spex","sunpy/radiospectra"]' >> "$GITHUB_OUTPUT"
+
   update:
     name: Update ${{ matrix.repo }}
+    needs: setup
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        repo:
-          # - sunpy/sunpy
-          # - sunpy/ndcube
-          # - sunpy/sunkit-magex
-          # - sunpy/streamtracer
-          # - sunpy/sunkit-dem
-          - sunpy/mpl-animators
-          # - sunpy/sunkit-image
-          # - sunpy/sunkit-pyvista
-          # - sunpy/sunkit-instruments
-          # - sunpy/drms
-          # - sunpy/sunraster
-          # - sunpy/sunkit-spex
-          # - sunpy/radiospectra
+        repo: ${{ fromJson(needs.setup.outputs.repo_list) }}
 
     permissions:
       contents: read
@@ -50,9 +50,6 @@ jobs:
     environment:
       name: global-cruft-update
       deployment: false
-
-    outputs:
-      created_pr_number: ${{ steps.create_pr.outputs.pr_number }}
 
     env:
       REPO_FULL: ${{ matrix.repo }}
@@ -210,26 +207,53 @@ jobs:
   # I don't want to add this to the previous job as I would like to reduce the complexity of the thing done inside this environment.
   allow-edits:
     name: Allow maintainer edit
-    needs: [update]
-    if: needs.update.outputs.created_pr_number
+    needs: [update, setup]
+    if: ${{ always() && needs.update.result == 'success' }}
     runs-on: ubuntu-latest
     permissions: {}
     environment:
       name: classic-pat
       deployment: false
 
+    env:
+      REPO_LIST: ${{ needs.setup.outputs.repo_list }}
+      BOT: "SunPyBot"
+      BRANCH: "cruft/update"
+
     steps:
-      - name: Modify created PR
-        env:
-          PR_NUMBER: ${{ needs.update.outputs.created_pr_number }}
-          REPO_NAME: ${{ matrix.repo_name }}
-          GH_TOKEN: ${{ secrets.classic_pat }}
-        run: gh api --method PATCH "/repos/$REPO_NAME/pulls/$PR_NUMBER" -f maintainer_can_modify=true
+      - name: Enable maintainer edits on recent bot PRs
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ secrets.classic_pat }}
+          script: |
+            const repos = JSON.parse(process.env.REPO_LIST);
+
+            for (const repo of repos) {
+              const [owner, repoName] = repo.split('/');
+              const prs = await github.rest.pulls.list({
+                owner,
+                repo: repoName,
+                head: `${process.env.BOT}:${process.env.BRANCH}`,
+                state: 'open',
+                per_page: 1
+              });
+
+              if (prs.data.length > 0) {
+                const prNumber = prs.data[0].number;
+                await github.rest.pulls.update({
+                  owner,
+                  repo: repoName,
+                  pull_number: prNumber,
+                  maintainer_can_modify: true
+                });
+                console.log(`Enabled maintainer edits on ${repo}#${prNumber}`);
+              }
+            }
 
   report-fail:
     name: Report failure
     if: failure()
-    needs: [update]
+    needs: [update, setup]
     runs-on: ubuntu-latest
     permissions:
       contents: read

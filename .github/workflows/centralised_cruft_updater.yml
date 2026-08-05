@@ -144,7 +144,8 @@ jobs:
           git checkout -b cruft/update
           git add .
           git commit -m "Automatic package template update"
-          git push fork cruft/update --force-with-lease
+          # TODO: It would be good to be able to incrementally update the existing branch here, maybe if the PR is open
+          git push fork cruft/update --force
 
       - name: Create pull request
         if: steps.cruft_json.outputs.has_changes == '1'

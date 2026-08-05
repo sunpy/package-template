@@ -122,8 +122,6 @@ jobs:
       - name: Check if only .cruft.json is modified
         if: steps.check.outputs.has_changes == '1'
         id: cruft_json
-        env:
-          EXISTING_PR: ${{ steps.pr_open.outputs.existing_pr}}
         run: |
           git status --porcelain=1
           if [[ "$(git status --porcelain=1)" == " M .cruft.json" ]]; then
@@ -138,6 +136,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.BOT_FORK_PAT }}
           BOT_FORK_PAT: ${{ secrets.BOT_FORK_PAT }}
+          EXISTING_PR: ${{ steps.pr_open.outputs.existing_pr }}
         run: |
           REPO_FULL="${{ matrix.repo }}"
           REPO_NAME="${REPO_FULL#*/}"
@@ -153,13 +152,21 @@ jobs:
             sleep 10
           fi
 
-          # Add fork as remote and push
+          # Add fork as remote
           git remote add fork "https://${BOT}:${BOT_FORK_PAT}@github.com/${BOT}/${REPO_NAME}.git"
-          git checkout -b cruft/update
+          git fetch fork
+
+          # If PR exists, checkout existing branch; otherwise create new one
+          if [ "$EXISTING_PR" -gt 0 ] && git rev-parse --verify fork/cruft/update >/dev/null 2>&1; then
+            echo "Existing PR found, checking out cruft/update branch"
+            git checkout -b cruft/update fork/cruft/update
+          else
+            git checkout -b cruft/update
+          fi
+
           git add .
           git commit -m "Automatic package template update"
-          # TODO: It would be good to be able to incrementally update the existing branch here, maybe if the PR is open
-          git push fork cruft/update --force
+          git push fork cruft/update
 
       - name: Create pull request
         if: steps.cruft_json.outputs.has_changes == '1'
@@ -169,7 +176,6 @@ jobs:
           REPO_FULL: "${{ matrix.repo }}"
           BOT: "SunPyBot"
           DRAFT: "${{ steps.conflicts.outputs.merge_conflicts == '1' }}"
-          EXISTING_PR: ${{ steps.pr_open.outputs.existing_pr }}
         run: |
           if [ "$EXISTING_PR" -gt 0 ]; then
             echo "PR #${EXISTING_PR} already exists, skipping creation."

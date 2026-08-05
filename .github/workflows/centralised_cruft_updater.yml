@@ -107,9 +107,23 @@ jobs:
           fi
           echo "merge_conflicts=$MERGE_CONFLICTS" >> "$GITHUB_OUTPUT"
 
+      - name: Check for existing PR
+        if: steps.check.outputs.has_changes == '1'
+        id: pr_open
+        env:
+          REPO_FULL: "${{ matrix.repo }}"
+          BOT: "SunPyBot"
+          DRAFT: "${{ steps.conflicts.outputs.merge_conflicts == '1' }}"
+        run: |
+          # Check if PR already exists
+          EXISTING_PR=$(gh pr list --repo "$REPO_FULL" --head "cruft/update" --state open --author "$BOT" --json number --jq '.[0].number' 2>/dev/null || echo "0")
+          echo "existing_pr=$EXISTING_PR" >> $GITHUB_OUTPUT
+
       - name: Check if only .cruft.json is modified
         if: steps.check.outputs.has_changes == '1'
         id: cruft_json
+        env:
+          EXISTING_PR: ${{ steps.pr_open.outputs.existing_pr}}
         run: |
           git status --porcelain=1
           if [[ "$(git status --porcelain=1)" == " M .cruft.json" ]]; then
@@ -155,11 +169,9 @@ jobs:
           REPO_FULL: "${{ matrix.repo }}"
           BOT: "SunPyBot"
           DRAFT: "${{ steps.conflicts.outputs.merge_conflicts == '1' }}"
+          EXISTING_PR: ${{ steps.pr_open.outputs.existing_pr }}
         run: |
-          # Check if PR already exists
-          EXISTING_PR=$(gh pr list --repo "$REPO_FULL" --head "cruft/update" --state open --author "$BOT" --json number --jq '.[0].number' 2>/dev/null || echo "")
-
-          if [ -n "$EXISTING_PR" ]; then
+          if [ "$EXISTING_PR" -gt 0 ]; then
             echo "PR #${EXISTING_PR} already exists, skipping creation."
           else
             gh pr create \

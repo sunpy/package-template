@@ -24,12 +24,12 @@ jobs:
       fail-fast: false
       matrix:
         repo:
-          - sunpy/sunpy
+          # - sunpy/sunpy
           # - sunpy/ndcube
           # - sunpy/sunkit-magex
           # - sunpy/streamtracer
           # - sunpy/sunkit-dem
-          # - sunpy/mpl-animators
+          - sunpy/mpl-animators
           # - sunpy/sunkit-image
           # - sunpy/sunkit-pyvista
           # - sunpy/sunkit-instruments

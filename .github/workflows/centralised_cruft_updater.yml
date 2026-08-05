@@ -7,11 +7,6 @@ name: Automatic Update from package template
 
 on:
   workflow_dispatch:
-    inputs:
-      extra_context:
-        description: "JSON string of extra context to pass to cruft update (optional)"
-        required: false
-        default: ""
   schedule:
     #        ┌───────── minute (0 - 59)
     #        │ ┌───────── hour (0 - 23)
@@ -81,22 +76,12 @@ jobs:
           git config --global user.email "sunpybot@users.noreply.github.com"
           git config --global user.name "SunPyBot"
 
-          EXTRA_CONTEXT="${{ github.event.inputs.extra_context }}"
-          if [ -z "$EXTRA_CONTEXT" ]; then
-            python -c "
-            from cruft import update
-            ret = update(skip_apply_ask=True, refresh_private_variables=True)
-            print('CRUFT_RESULT=' + ('success' if ret else 'failed'))
-            "
-          else
-            python -c "
-            import json, sys
-            from cruft import update
-            extra = json.loads(sys.argv[1])
-            ret = update(skip_apply_ask=True, refresh_private_variables=True, extra_context=extra)
-            print('CRUFT_RESULT=' + ('success' if ret else 'failed'))
-            " "$EXTRA_CONTEXT"
-          fi
+          python -c "
+          import json, sys
+          from cruft import update
+          ret = update(skip_apply_ask=True, refresh_private_variables=True)
+          print('CRUFT_RESULT=' + ('success' if ret else 'failed'))
+          "
 
           git restore --staged .
 

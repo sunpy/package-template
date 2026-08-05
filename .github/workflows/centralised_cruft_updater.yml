@@ -98,12 +98,14 @@ jobs:
         if: steps.check.outputs.has_changes == '1'
         id: conflicts
         run: |
-          MERGE_CONFLICTS="${{ steps.cruft_update.outputs.merge_conflicts }}"
+          MERGE_CONFLICTS="${STEPS_CRUFT_UPDATE_OUTPUTS_MERGE_CONFLICTS}"
           # Also check for conflict markers in any tracked file
           if git grep -l '^<<<<<<< ' 2>/dev/null; then
             MERGE_CONFLICTS=1
           fi
           echo "merge_conflicts=$MERGE_CONFLICTS" >> "$GITHUB_OUTPUT"
+        env:
+          STEPS_CRUFT_UPDATE_OUTPUTS_MERGE_CONFLICTS: ${{ steps.cruft_update.outputs.merge_conflicts }}
 
       - name: Check if only .cruft.json is modified
         if: steps.check.outputs.has_changes == '1'

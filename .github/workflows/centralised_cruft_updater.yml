@@ -65,47 +65,42 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Check for existing branch and PR
+      - name: Setup fork and check existing PR
         id: existing
         env:
           GH_TOKEN: ${{ secrets.BOT_FORK_PAT }}
-        run: |
-          REPO_NAME="${REPO_FULL#*/}"
-
-          # Check if fork exists
-          FORK_EXISTS=$(gh api "repos/${BOT}/${REPO_NAME}" --jq '.full_name' 2>/dev/null || echo "")
-          echo "fork_exists=$([ -n "$FORK_EXISTS" ] && echo "true" || echo "false")" >> "$GITHUB_OUTPUT"
-
-          BRANCH_EXISTS="false"
-          EXISTING_PR="0"
-
-          if [ "$FORK_EXISTS" ]; then
-            # Check if cruft/update branch exists on fork
-            BRANCH_EXISTS=$(gh api "repos/${BOT}/${REPO_NAME}/branches/${BRANCH}" --jq '.name' 2>/dev/null || echo "")
-            if [ -n "$BRANCH_EXISTS" ]; then
-              BRANCH_EXISTS="true"
-            else
-              BRANCH_EXISTS="false"
-            fi
-
-            # Check if there's an open PR from this branch
-            EXISTING_PR=$(gh pr list --repo "$REPO_FULL" --head "$BRANCH" --state open --author "$BOT" --json number --jq '.[0].number // 0' 2>/dev/null)
-          fi
-
-          echo "Found existing PR $EXISTING_PR"
-
-          echo "branch_exists=$BRANCH_EXISTS" >> "$GITHUB_OUTPUT"
-          echo "existing_pr=$EXISTING_PR" >> "$GITHUB_OUTPUT"
-
-      # If a PR is open then we want to incrementally update that PR, if a PR isn't open we discard the existing branch
-      - name: Checkout existing branch if PR is open
-        if: steps.existing.outputs.existing_pr != '0'
-        env:
           BOT_FORK_PAT: ${{ secrets.BOT_FORK_PAT }}
         run: |
           REPO_NAME="${REPO_FULL#*/}"
 
+          # Create fork if it doesn't exist
+          FORK_EXISTS=$(gh api "repos/${BOT}/${REPO_NAME}" --jq '.full_name' 2>/dev/null || echo "")
+          if [ -z "$FORK_EXISTS" ]; then
+            echo "Creating fork..."
+            gh api "repos/${REPO_FULL}/forks" -X POST
+            sleep 10
+          fi
+
+          # Add fork remote
           git remote add fork "https://${BOT}:${BOT_FORK_PAT}@github.com/${BOT}/${REPO_NAME}.git"
+
+          # Check if cruft/update branch exists on fork
+          BRANCH_EXISTS=$(gh api "repos/${BOT}/${REPO_NAME}/branches/${BRANCH}" --jq '.name' 2>/dev/null || echo "")
+          if [ -n "$BRANCH_EXISTS" ]; then
+            BRANCH_EXISTS="true"
+          else
+            BRANCH_EXISTS="false"
+          fi
+
+          # Check if there's an open PR from this branch
+          EXISTING_PR=$(gh pr list --repo "$REPO_FULL" --head "$BRANCH" --state open --author "$BOT" --json number --jq '.[0].number // 0' 2>/dev/null)
+
+          echo "branch_exists=$BRANCH_EXISTS" >> "$GITHUB_OUTPUT"
+          echo "existing_pr=$EXISTING_PR" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout existing branch if PR is open
+        if: steps.existing.outputs.existing_pr != '0'
+        run: |
           git fetch fork $BRANCH
           git checkout -B $BRANCH fork/$BRANCH
 
@@ -168,22 +163,11 @@ jobs:
             echo "has_changes=1" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Setup fork and push
+      - name: Push changes
         if: steps.cruft_json.outputs.has_changes == '1'
         env:
-          GH_TOKEN: ${{ secrets.BOT_FORK_PAT }}
           BOT_FORK_PAT: ${{ secrets.BOT_FORK_PAT }}
         run: |
-          REPO_NAME="${REPO_FULL#*/}"
-
-          # Create fork if it doesn't exist
-          if [ "${{ steps.existing.outputs.fork_exists }}" = "false" ]; then
-            echo "Creating fork..."
-            gh api "repos/${REPO_FULL}/forks" -X POST
-            sleep 10
-            git remote add fork "https://${BOT}:${BOT_FORK_PAT}@github.com/${BOT}/${REPO_NAME}.git"
-          fi
-
           # Create or switch to cruft/update branch
           if git rev-parse --verify $BRANCH >/dev/null 2>&1; then
             git checkout $BRANCH

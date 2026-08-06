@@ -90,6 +90,15 @@ jobs:
             CHECKOUT_REF="$BRANCH"
           else
             echo "No open PR, starting from ${REPO_FULL} default branch"
+
+            # Any branch left over from a closed PR is stale. create-pull-request
+            # cannot reconcile it against a fresh checkout of the upstream
+            # default branch, so delete it and let the action recreate it.
+            if gh api "repos/${FORK_REPO}/git/ref/heads/${BRANCH}" >/dev/null 2>&1; then
+              echo "Deleting stale ${BRANCH} on ${FORK_REPO}"
+              gh api -X DELETE "repos/${FORK_REPO}/git/refs/heads/${BRANCH}"
+            fi
+
             CHECKOUT_REPO="$REPO_FULL"
             CHECKOUT_REF=""
           fi

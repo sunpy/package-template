@@ -171,6 +171,10 @@ jobs:
           git config user.name "SunPyBot"
 
           git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
           git commit -m "Run cruft update from package template"
           git push "https://${BOT}:${BOT_FORK_PAT}@github.com/${FORK_REPO}.git" "HEAD:${BRANCH}"
 

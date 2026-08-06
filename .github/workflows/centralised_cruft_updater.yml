@@ -17,6 +17,11 @@ on:
         required: false
         default: ''
         type: string
+      repos:
+        description: 'Comma-separated list of repos to update (e.g. sunpy/sunpy,sunpy/ndcube). Leave empty to target all packages.'
+        required: false
+        default: ''
+        type: string
   schedule:
     #        ┌───────── minute (0 - 59)
     #        │ ┌───────── hour (0 - 23)
@@ -41,8 +46,19 @@ jobs:
     steps:
       - name: Set repo list
         id: set-repos
+        env:
+          REPOS_INPUT: ${{ inputs.repos }}
         run: |
-          echo 'repo_list=["sunpy/sunpy","sunpy/ndcube","sunpy/sunkit-magex","sunpy/streamtracer","sunpy/sunkit-dem","sunpy/mpl-animators","sunpy/sunkit-image","sunpy/sunkit-pyvista","sunpy/sunkit-instruments","sunpy/drms","sunpy/sunraster","sunpy/sunkit-spex","sunpy/radiospectra"]' >> "$GITHUB_OUTPUT"
+          DEFAULT='["sunpy/sunpy","sunpy/ndcube","sunpy/sunkit-magex","sunpy/streamtracer","sunpy/sunkit-dem","sunpy/mpl-animators","sunpy/sunkit-image","sunpy/sunkit-pyvista","sunpy/sunkit-instruments","sunpy/drms","sunpy/sunraster","sunpy/sunkit-spex","sunpy/radiospectra"]'
+
+          if [ -n "$REPOS_INPUT" ]; then
+            # Convert the comma-separated input into a JSON array
+            repo_list=$(echo "$REPOS_INPUT" | jq -R -c 'split(",") | map(gsub("^\\s+|\\s+$"; ""))')
+          else
+            repo_list="$DEFAULT"
+          fi
+
+          echo "repo_list=${repo_list}" >> "$GITHUB_OUTPUT"
 
   update:
     name: Update ${{ matrix.repo }}

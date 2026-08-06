@@ -67,39 +67,46 @@ jobs:
         id: existing
         env:
           GH_TOKEN: ${{ secrets.BOT_FORK_PAT }}
-          BOT_FORK_PAT: ${{ secrets.BOT_FORK_PAT }}
         run: |
           REPO_NAME="${REPO_FULL#*/}"
+          FORK_REPO="${BOT}/${REPO_NAME}"
 
-          # Create fork if it doesn't exist
-          FORK_EXISTS=$(gh api "repos/${BOT}/${REPO_NAME}" --jq '.full_name' 2>/dev/null || echo "")
-          if [ -z "$FORK_EXISTS" ]; then
+          # create-pull-request will not create the fork for us, so do it here.
+          if ! gh api "repos/${FORK_REPO}" --jq '.full_name' >/dev/null 2>&1; then
             echo "Creating fork..."
             gh api "repos/${REPO_FULL}/forks" -X POST
             sleep 10
           fi
 
           # Check if there's an open PR from this branch
-          EXISTING_PR=$(gh pr list --repo "$REPO_FULL" --head "$BRANCH" --state open --author "$BOT" --json number --jq '.[0].number // 0' 2>/dev/null)
+          EXISTING_PR=$(gh pr list --repo "$REPO_FULL" --head "$BRANCH" --state open --author "$BOT" --json number --jq '.[0].number // 0')
 
-          # Create branch on fork if it doesn't exist
-          BRANCH_EXISTS=$(gh api "repos/${BOT}/${REPO_NAME}/branches/${BRANCH}" --jq '.name' 2>/dev/null || echo "")
-          if [ -z "$BRANCH_EXISTS" ]; then
-            echo "Creating branch ${BRANCH} on fork..."
-            gh api "repos/${BOT}/${REPO_NAME}/git/refs" \
-              -X POST \
-              -f ref="refs/heads/${BRANCH}" \
-              -f sha="$(gh api "repos/${REPO_FULL}/git/ref/heads/main" --jq '.object.sha')"
+          # An open PR may carry manual conflict fixes, so keep building on its
+          # branch. With no open PR we start clean from the upstream default
+          # branch and let create-pull-request manage the branch on the fork.
+          if [ "$EXISTING_PR" != "0" ]; then
+            echo "PR #${EXISTING_PR} is open, continuing on ${FORK_REPO}@${BRANCH}"
+            CHECKOUT_REPO="$FORK_REPO"
+            CHECKOUT_REF="$BRANCH"
+          else
+            echo "No open PR, starting from ${REPO_FULL} default branch"
+            CHECKOUT_REPO="$REPO_FULL"
+            CHECKOUT_REF=""
           fi
 
-          echo "existing_pr=$EXISTING_PR" >> "$GITHUB_OUTPUT"
-          echo "fork_repo=$BOT/$REPO_NAME" >> "$GITHUB_OUTPUT"
+          {
+            echo "existing_pr=$EXISTING_PR"
+            echo "fork_repo=$FORK_REPO"
+            echo "checkout_repo=$CHECKOUT_REPO"
+            echo "checkout_ref=$CHECKOUT_REF"
+          } >> "$GITHUB_OUTPUT"
 
+      # An empty ref checks out the default branch.
       - name: Checkout target repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          repository: ${{ steps.existing.outputs.fork_repo }}
-          ref: ${{ env.BRANCH }}
+          repository: ${{ steps.existing.outputs.checkout_repo }}
+          ref: ${{ steps.existing.outputs.checkout_ref }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -157,24 +164,47 @@ jobs:
             echo "has_changes=1" >> "$GITHUB_OUTPUT"
           fi
 
+      # There is already an open PR, so its branch just needs a new commit.
+      # create-pull-request is not used here because it resets the
+      # branch to the base, which would discard any manual conflict fixes.
+      - name: Push to existing pull request branch
+        if: steps.cruft_json.outputs.has_changes == '1' && steps.existing.outputs.existing_pr != '0'
+        env:
+          BOT_FORK_PAT: ${{ secrets.BOT_FORK_PAT }}
+          FORK_REPO: ${{ steps.existing.outputs.fork_repo }}
+        run: |
+          git config user.email "sunpybot@users.noreply.github.com"
+          git config user.name "SunPyBot"
+
+          git add -A
+          git commit -m "Run cruft update from package template"
+          git push "https://${BOT}:${BOT_FORK_PAT}@github.com/${FORK_REPO}.git" "HEAD:${BRANCH}"
+
+      # No open PR, so build the branch on the fork from scratch and open one.
+      # maintainer-can-modify must be false as BOT_PR_PAT has no write access to
+      # the fork; the allow-edits job turns it on afterwards.
       - name: Create Pull Request if needed
         id: create_pr
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
-        if: steps.cruft_json.outputs.has_changes == '1'
+        if: steps.cruft_json.outputs.has_changes == '1' && steps.existing.outputs.existing_pr == '0'
         with:
           token: ${{ secrets.BOT_PR_PAT }}
           branch-token: ${{ secrets.BOT_FORK_PAT }}
+          push-to-fork: ${{ steps.existing.outputs.fork_repo }}
+          maintainer-can-modify: false
           commit-message: Run cruft update from package template
           committer: SunPyBot <sunpybot@users.noreply.github.com>
           author: ${{ github.actor }} <${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com>
           signoff: false
-          branch: ${{ env.branch }}
+          branch: ${{ env.BRANCH }}
           delete-branch: false
           title: 'Updates from the package template'
           body: |
-            This is an autogenerated PR, which will applies the latest changes from the [SunPy Package Template](https://github.com/sunpy/package-template).
+            This is an autogenerated PR, which applies the latest changes from the [SunPy Package Template](https://github.com/sunpy/package-template).
 
-            If this pull request has been opened as a draft there are conflicts which need fixing.\n\n**To run the CI on this pull request you will need to close it and reopen it.**"
+            If this pull request has been opened as a draft there are conflicts which need fixing.
+
+            **To run the CI on this pull request you will need to close it and reopen it.**
           draft: ${{ steps.conflicts.outputs.merge_conflicts == '1' }}
 
       - name: Prepare status for collation
@@ -185,7 +215,7 @@ jobs:
           JOB_STATUS: ${{ job.status }}
           STEPS_CRUFT_JSON_OUTPUTS_HAS_CHANGES: ${{ steps.cruft_json.outputs.has_changes }}
           STEPS_CONFLICTS_OUTPUTS_MERGE_CONFLICTS: ${{ steps.conflicts.outputs.merge_conflicts }}
-          STEPS_CREATE_PR_OUTPUTS_PR_NUMBER: ${{ steps.create_pr.outputs.pull-request-number }}
+          STEPS_CREATE_PR_OUTPUTS_PR_NUMBER: ${{ steps.create_pr.outputs.pull-request-number || steps.existing.outputs.existing_pr }}
         run: |
           mkdir -p status
           cat > status/${STEPS_SAFE_OUTPUTS_NAME}.json <<EOF
@@ -302,7 +332,7 @@ jobs:
               CONFLICT="— No changes"
             fi
 
-            if [ -n "$PR_NUM" ] && [ "$PR_NUM" != "null" ] && [ "$PR_NUM" != "" ]; then
+            if [ -n "$PR_NUM" ] && [ "$PR_NUM" != "null" ] && [ "$PR_NUM" != "0" ]; then
               PR_LINK="[#${PR_NUM}](https://github.com/${REPO}/pull/${PR_NUM})"
             else
               PR_LINK="—"
@@ -340,7 +370,7 @@ jobs:
           $(echo "$SUMMARY" | jq -r .)"
 
           # Search for existing open issue
-          EXISTING=$(gh search issues --repo ${{ github.repository }} --state open --match title "$TITLE" --json number --jq '.[0].number' 2>/dev/null || echo "")
+          EXISTING=$(gh search issues --repo ${{ github.repository }} --state open --match title "$TITLE" --json number --jq '.[0].number // empty' 2>/dev/null || echo "")
 
           if [ -z "$EXISTING" ]; then
             gh issue create \

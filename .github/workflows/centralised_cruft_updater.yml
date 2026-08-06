@@ -1,0 +1,404 @@
+# This workflow runs cruft update on all templated sponsored affiliated packages
+# and opens PRs from the SunPyBot forks. It uses two fine-grained PATs:
+# - BOT_FORK_PAT: scoped to SunPyBot's forks (contents: read/write)
+# - BOT_PR_PAT: scoped to sunpy org repos (pull requests: read/write, contents: read)
+# and also a classic PAT to allow maintainer access to PRs
+
+name: Update all packages with package template
+
+on:
+  push:
+    branches:
+      - 'main'
+  workflow_dispatch:
+    inputs:
+      extra_context:
+        description: 'JSON of cookiecutter variables to update (passed to cruft --variables-to-update), e.g. {"project": "new-name"}'
+        required: false
+        default: ''
+        type: string
+      repos:
+        description: 'Comma-separated list of repos to update (e.g. sunpy/sunpy,sunpy/ndcube). Leave empty to target all packages.'
+        required: false
+        default: ''
+        type: string
+
+concurrency:
+  group: cruft-update
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  setup:
+    name: Setup
+    runs-on: ubuntu-latest
+    outputs:
+      repo_list: ${{ steps.set-repos.outputs.repo_list }}
+
+    steps:
+      - name: Set repo list
+        id: set-repos
+        env:
+          REPOS_INPUT: ${{ inputs.repos }}
+        run: |
+          DEFAULT='["sunpy/sunpy","sunpy/ndcube","sunpy/sunkit-magex","sunpy/streamtracer","sunpy/sunkit-dem","sunpy/mpl-animators","sunpy/sunkit-image","sunpy/sunkit-pyvista","sunpy/sunkit-instruments","sunpy/drms","sunpy/sunraster","sunpy/sunkit-spex","sunpy/radiospectra"]'
+
+          if [ -n "$REPOS_INPUT" ]; then
+            # Convert the comma-separated input into a JSON array
+            repo_list=$(echo "$REPOS_INPUT" | jq -R -c 'split(",") | map(gsub("^\\s+|\\s+$"; ""))')
+          else
+            repo_list="$DEFAULT"
+          fi
+
+          echo "repo_list=${repo_list}" >> "$GITHUB_OUTPUT"
+
+  update:
+    name: Update ${{ matrix.repo }}
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        repo: ${{ fromJson(needs.setup.outputs.repo_list) }}
+
+    permissions:
+      contents: read
+
+    environment:
+      name: global-cruft-update
+      deployment: false
+
+    env:
+      REPO_FULL: ${{ matrix.repo }}
+      BOT: "SunPyBot"
+      BRANCH: "cruft/update"
+
+    steps:
+      - name: Set safe repo name
+        id: safe
+        run: echo "name=${REPO_FULL//\//-}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup fork and check existing PR
+        id: existing
+        env:
+          GH_TOKEN: ${{ secrets.BOT_FORK_PAT }}
+        run: |
+          REPO_NAME="${REPO_FULL#*/}"
+          FORK_REPO="${BOT}/${REPO_NAME}"
+
+          # create-pull-request will not create the fork for us, so do it here.
+          if ! gh api "repos/${FORK_REPO}" --jq '.full_name' >/dev/null 2>&1; then
+            echo "Creating fork..."
+            gh api "repos/${REPO_FULL}/forks" -X POST
+            sleep 10
+          fi
+
+          # Check if there's an open PR from this branch
+          EXISTING_PR=$(gh pr list --repo "$REPO_FULL" --head "$BRANCH" --state open --author "$BOT" --json number --jq '.[0].number // 0')
+
+          # An open PR may carry manual conflict fixes, so keep building on its
+          # branch. With no open PR we start clean from the upstream default
+          # branch and let create-pull-request manage the branch on the fork.
+          if [ "$EXISTING_PR" != "0" ]; then
+            echo "PR #${EXISTING_PR} is open, continuing on ${FORK_REPO}@${BRANCH}"
+            CHECKOUT_REPO="$FORK_REPO"
+            CHECKOUT_REF="$BRANCH"
+          else
+            echo "No open PR, starting from ${REPO_FULL} default branch"
+
+            # Any branch left over from a closed PR is stale. create-pull-request
+            # cannot reconcile it against a fresh checkout of the upstream
+            # default branch, so delete it and let the action recreate it.
+            if gh api "repos/${FORK_REPO}/git/ref/heads/${BRANCH}" >/dev/null 2>&1; then
+              echo "Deleting stale ${BRANCH} on ${FORK_REPO}"
+              gh api -X DELETE "repos/${FORK_REPO}/git/refs/heads/${BRANCH}"
+            fi
+
+            CHECKOUT_REPO="$REPO_FULL"
+            CHECKOUT_REF=""
+          fi
+
+          {
+            echo "existing_pr=$EXISTING_PR"
+            echo "fork_repo=$FORK_REPO"
+            echo "checkout_repo=$CHECKOUT_REPO"
+            echo "checkout_ref=$CHECKOUT_REF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Checkout target repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ steps.existing.outputs.checkout_repo }}
+          ref: ${{ steps.existing.outputs.checkout_ref }}  # An empty ref checks out the default branch.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install cruft
+        run: python -m pip install git+https://github.com/Cadair/cruft@patch-p1
+
+      - name: Run cruft update
+        id: cruft_update
+        env:
+          EXTRA_CONTEXT: ${{ inputs.extra_context }}
+        run: |
+          EXTRA_ARGS=()
+          if [ -n "$EXTRA_CONTEXT" ]; then
+            EXTRA_ARGS=(--variables-to-update "$EXTRA_CONTEXT")
+          fi
+          CRUFT_OUTPUT=$(cruft update --skip-apply-ask --refresh-private-variables "${EXTRA_ARGS[@]}" 2>&1) || true
+          echo "$CRUFT_OUTPUT"
+
+          if echo "$CRUFT_OUTPUT" | grep -q "Failed to cleanly apply the update, there may be merge conflicts"; then
+            echo "merge_conflicts=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "merge_conflicts=0" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check if only .cruft.json is modified
+        id: cruft_json
+        run: |
+          git status --porcelain=1
+          if [[ "$(git status --porcelain=1)" == " M .cruft.json" ]]; then
+            echo "Only .cruft.json is modified. Exiting workflow early."
+            echo "has_changes=0" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changes=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Detect merge conflicts
+        id: conflicts
+        if: steps.cruft_json.outputs.has_changes == '1'
+        env:
+          STEPS_CRUFT_UPDATE_OUTPUTS_MERGE_CONFLICTS: ${{ steps.cruft_update.outputs.merge_conflicts }}
+        run: |
+          MERGE_CONFLICTS="${STEPS_CRUFT_UPDATE_OUTPUTS_MERGE_CONFLICTS}"
+          # Also check for conflict markers in any tracked file
+          if git grep -l '^<<<<<<< ' 2>/dev/null; then
+            MERGE_CONFLICTS=1
+          fi
+          echo "merge_conflicts=$MERGE_CONFLICTS" >> "$GITHUB_OUTPUT"
+
+      # There is already an open PR, so its branch just needs a new commit.
+      # create-pull-request is not used here because it resets the
+      # branch to the base, which would discard any manual conflict fixes.
+      - name: Push to existing pull request branch
+        if: steps.cruft_json.outputs.has_changes == '1' && steps.existing.outputs.existing_pr != '0'
+        env:
+          BOT_FORK_PAT: ${{ secrets.BOT_FORK_PAT }}
+          FORK_REPO: ${{ steps.existing.outputs.fork_repo }}
+        run: |
+          git config user.email "sunpybot@users.noreply.github.com"
+          git config user.name "SunPyBot"
+
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "Run cruft update from package template"
+          git push "https://${BOT}:${BOT_FORK_PAT}@github.com/${FORK_REPO}.git" "HEAD:${BRANCH}"
+
+      # No open PR, so build the branch on the fork from scratch and open one.
+      # maintainer-can-modify must be false as BOT_PR_PAT has no write access to
+      # the fork; the allow-edits job turns it on afterwards.
+      - name: Create Pull Request if needed
+        id: create_pr
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        if: steps.cruft_json.outputs.has_changes == '1' && steps.existing.outputs.existing_pr == '0'
+        with:
+          token: ${{ secrets.BOT_PR_PAT }}
+          branch-token: ${{ secrets.BOT_FORK_PAT }}
+          push-to-fork: ${{ steps.existing.outputs.fork_repo }}
+          maintainer-can-modify: false
+          commit-message: Run cruft update from package template
+          committer: SunPyBot <sunpybot@users.noreply.github.com>
+          author: ${{ github.actor }} <${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com>
+          signoff: false
+          branch: ${{ env.BRANCH }}
+          delete-branch: true
+          title: 'Updates from the package template'
+          body: |
+            This is an autogenerated PR, which applies the latest changes from the [SunPy Package Template](https://github.com/sunpy/package-template).
+
+            If this pull request has been opened as a draft there are conflicts which need fixing.
+
+            **To run the CI on this pull request you will need to close it and reopen it.**
+          draft: ${{ steps.conflicts.outputs.merge_conflicts == '1' }}
+
+      - name: Prepare status for collation
+        if: always()
+        env:
+          STEPS_SAFE_OUTPUTS_NAME: ${{ steps.safe.outputs.name }}
+          MATRIX_REPO: ${{ matrix.repo }}
+          JOB_STATUS: ${{ job.status }}
+          STEPS_CRUFT_JSON_OUTPUTS_HAS_CHANGES: ${{ steps.cruft_json.outputs.has_changes }}
+          STEPS_CONFLICTS_OUTPUTS_MERGE_CONFLICTS: ${{ steps.conflicts.outputs.merge_conflicts }}
+          STEPS_CREATE_PR_OUTPUTS_PR_NUMBER: ${{ steps.create_pr.outputs.pull-request-number || steps.existing.outputs.existing_pr }}
+        run: |
+          mkdir -p status
+          cat > status/${STEPS_SAFE_OUTPUTS_NAME}.json <<EOF
+          {
+            "repo": "${MATRIX_REPO}",
+            "status": "${JOB_STATUS}",
+            "has_changes": "${STEPS_CRUFT_JSON_OUTPUTS_HAS_CHANGES}",
+            "merge_conflicts": "${STEPS_CONFLICTS_OUTPUTS_MERGE_CONFLICTS}",
+            "pr_number": "${STEPS_CREATE_PR_OUTPUTS_PR_NUMBER}",
+            "run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          }
+          EOF
+
+      - name: Upload status artifact
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: status-${{ steps.safe.outputs.name }}
+          path: status/
+          retention-days: 1
+
+  # This ludicrous situation is a limitation of the fine-grained PATs created to do the previous job.
+  # I don't want to add this to the previous job as I would like to reduce the complexity of the thing done inside this environment.
+  allow-edits:
+    name: Allow maintainer edit
+    needs: [update, setup]
+    if: '!cancelled()'
+    runs-on: ubuntu-latest
+    permissions: {}
+    environment:
+      name: classic-pat
+      deployment: false
+
+    env:
+      REPO_LIST: ${{ needs.setup.outputs.repo_list }}
+      BOT: "SunPyBot"
+      BRANCH: "cruft/update"
+
+    steps:
+      - name: Enable maintainer edits on recent bot PRs
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ secrets.classic_pat }}
+          script: |
+            const repos = JSON.parse(process.env.REPO_LIST);
+
+            for (const repo of repos) {
+              const [owner, repoName] = repo.split('/');
+              const prs = await github.rest.pulls.list({
+                owner,
+                repo: repoName,
+                head: `${process.env.BOT}:${process.env.BRANCH}`,
+                state: 'open',
+                per_page: 1
+              });
+
+              if (prs.data.length > 0) {
+                const prNumber = prs.data[0].number;
+                await github.rest.pulls.update({
+                  owner,
+                  repo: repoName,
+                  pull_number: prNumber,
+                  maintainer_can_modify: true
+                });
+                console.log(`Enabled maintainer edits on ${repo}#${prNumber}`);
+              }
+            }
+
+  collate:
+    name: Collate results
+    needs: [update, setup]
+    if: always()
+    runs-on: ubuntu-latest
+    outputs:
+      summary: ${{ steps.build-summary.outputs.summary }}
+    permissions: {}
+
+    steps:
+      - name: Download status artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: status/
+          pattern: status-*
+          merge-multiple: true
+
+      - name: Build summary
+        id: build-summary
+        run: |
+          SUMMARY="**[Workflow Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})**
+
+          | Repository | Status | Conflicts | PR | Logs |
+          |------------|--------|-----------|----|------|"
+
+          for file in status/*.json; do
+            REPO=$(jq -r '.repo' "$file")
+            STATUS=$(jq -r '.status' "$file")
+            HAS_CHANGES=$(jq -r '.has_changes' "$file")
+            MERGE_CONFLICTS=$(jq -r '.merge_conflicts' "$file")
+            PR_NUM=$(jq -r '.pr_number' "$file")
+            RUN_URL=$(jq -r '.run_url' "$file")
+
+            if [ "$STATUS" = "success" ]; then
+              STATUS_ICON="✅ Success"
+            else
+              STATUS_ICON="❌ Failed"
+            fi
+
+            if [ "$HAS_CHANGES" = "1" ]; then
+              if [ "$MERGE_CONFLICTS" = "1" ]; then
+                CONFLICT="⚠️ Conflicts"
+              else
+                CONFLICT="✅ No conflicts"
+              fi
+            else
+              CONFLICT="— No changes"
+            fi
+
+            if [ -n "$PR_NUM" ] && [ "$PR_NUM" != "null" ] && [ "$PR_NUM" != "0" ]; then
+              PR_LINK="[#${PR_NUM}](https://github.com/${REPO}/pull/${PR_NUM})"
+            else
+              PR_LINK="—"
+            fi
+
+            SUMMARY="${SUMMARY}
+          | ${REPO} | ${STATUS_ICON} | ${CONFLICT} | ${PR_LINK} | [Logs](${RUN_URL}) |"
+          done
+
+          echo "$SUMMARY" >> "$GITHUB_STEP_SUMMARY"
+          echo "summary=$(echo "$SUMMARY" | jq -Rs .)" >> "$GITHUB_OUTPUT"
+
+  report-fail:
+    name: Report failure
+    if: failure()
+    needs: [update, setup, collate]
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+
+    steps:
+      - name: Open issue on failure
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SUMMARY: ${{ needs.collate.outputs.summary }}
+        run: |
+          TITLE="Package template auto-update failed"
+          LABEL="github_actions"
+
+          BODY="[Workflow Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+          The package template auto-update workflow completed with failures.
+
+          $(echo "$SUMMARY" | jq -r .)"
+
+          # Search for existing open issue
+          EXISTING=$(gh search issues --repo ${{ github.repository }} --state open --match title "$TITLE" --json number --jq '.[0].number // empty' 2>/dev/null || echo "")
+
+          if [ -z "$EXISTING" ]; then
+            gh issue create \
+              --repo ${{ github.repository }} \
+              --title "$TITLE" \
+              --body "$BODY" \
+              --label "$LABEL"
+          else
+            gh issue edit "$EXISTING" \
+              --repo ${{ github.repository }} \
+              --body "$BODY"
+          fi

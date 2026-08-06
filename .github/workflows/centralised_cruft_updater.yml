@@ -261,7 +261,7 @@ jobs:
   allow-edits:
     name: Allow maintainer edit
     needs: [update, setup]
-    if: ${{ always() && needs.update.result == 'success' }}
+    if: '!cancelled()'
     runs-on: ubuntu-latest
     permissions: {}
     environment:

@@ -11,6 +11,12 @@ on:
   #  branches:
   #    - 'main'
   workflow_dispatch:
+    inputs:
+      extra_context:
+        description: 'JSON of cookiecutter variables to update (passed to cruft --variables-to-update), e.g. {"project": "new-name"}'
+        required: false
+        default: ''
+        type: string
   schedule:
     #        ┌───────── minute (0 - 59)
     #        │ ┌───────── hour (0 - 23)
@@ -124,8 +130,14 @@ jobs:
 
       - name: Run cruft update
         id: cruft_update
+        env:
+          EXTRA_CONTEXT: ${{ inputs.extra_context }}
         run: |
-          CRUFT_OUTPUT=$(cruft update --skip-apply-ask --refresh-private-variables 2>&1) || true
+          EXTRA_ARGS=()
+          if [ -n "$EXTRA_CONTEXT" ]; then
+            EXTRA_ARGS=(--variables-to-update "$EXTRA_CONTEXT")
+          fi
+          CRUFT_OUTPUT=$(cruft update --skip-apply-ask --refresh-private-variables "${EXTRA_ARGS[@]}" 2>&1) || true
           echo "$CRUFT_OUTPUT"
 
           if echo "$CRUFT_OUTPUT" | grep -q "Failed to cleanly apply the update, there may be merge conflicts"; then

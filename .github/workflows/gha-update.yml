@@ -29,13 +29,13 @@ jobs:
           skip_push: "true"
           update: "true"
           verify: "true"
-          verify_min_age: "true" # pinact run --verify-min-age
+          verify_min_age: "false"  # Don't revert early bumps for bugs
           min_age: "7"
-          includes: |
-            {{ cookiecutter.package_name }}/.github/workflows/.*
           branch_to_tags: |
             ^main$
-          separator: "  # "
+          includes: |
+            \{\{\ cookiecutter.package_name\ \}\}/.github/workflows/**
+            .github/workflows/**
 
       - name: Create pull request
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1

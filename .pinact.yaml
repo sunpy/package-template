@@ -7,7 +7,6 @@ min_age:
 separator: "  # "
 files:
   - pattern: .github/workflows/*.yml
-  - pattern: .github/workflows/*.yml
   - pattern: "{{ cookiecutter.package_name }}/.github/workflows/*.yml"
 
 # rules:

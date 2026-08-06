@@ -8,6 +8,8 @@ name: Update all packages with package template
 
 on:
   push:
+    branches:
+      - 'main'
   workflow_dispatch:
   schedule:
     #        ┌───────── minute (0 - 59)
@@ -34,8 +36,7 @@ jobs:
       - name: Set repo list
         id: set-repos
         run: |
-          # echo 'repo_list=["sunpy/sunpy","sunpy/ndcube","sunpy/sunkit-magex","sunpy/streamtracer","sunpy/sunkit-dem","sunpy/mpl-animators","sunpy/sunkit-image","sunpy/sunkit-pyvista","sunpy/sunkit-instruments","sunpy/drms","sunpy/sunraster","sunpy/sunkit-spex","sunpy/radiospectra"]' >> "$GITHUB_OUTPUT"
-          echo 'repo_list=["sunpy/mpl-animators"]' >> "$GITHUB_OUTPUT"
+          echo 'repo_list=["sunpy/sunpy","sunpy/ndcube","sunpy/sunkit-magex","sunpy/streamtracer","sunpy/sunkit-dem","sunpy/mpl-animators","sunpy/sunkit-image","sunpy/sunkit-pyvista","sunpy/sunkit-instruments","sunpy/drms","sunpy/sunraster","sunpy/sunkit-spex","sunpy/radiospectra"]' >> "$GITHUB_OUTPUT"
 
   update:
     name: Update ${{ matrix.repo }}
@@ -110,33 +111,18 @@ jobs:
             echo "checkout_ref=$CHECKOUT_REF"
           } >> "$GITHUB_OUTPUT"
 
-      # An empty ref checks out the default branch.
       - name: Checkout target repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ${{ steps.existing.outputs.checkout_repo }}
-          ref: ${{ steps.existing.outputs.checkout_ref }}
+          ref: ${{ steps.existing.outputs.checkout_ref }}  # An empty ref checks out the default branch.
           fetch-depth: 0
           persist-credentials: false
 
       - name: Install cruft
         run: python -m pip install git+https://github.com/Cadair/cruft@patch-p1
 
-      - name: Check if update is available
-        id: check
-        run: |
-          CHANGES=0
-          if [ -f .cruft.json ]; then
-            if ! cruft check; then
-              CHANGES=1
-            fi
-          else
-            echo "No .cruft.json file"
-          fi
-          echo "has_changes=$CHANGES" >> "$GITHUB_OUTPUT"
-
       - name: Run cruft update
-        if: steps.check.outputs.has_changes == '1'
         id: cruft_update
         run: |
           CRUFT_OUTPUT=$(cruft update --skip-apply-ask --refresh-private-variables 2>&1) || true
@@ -147,19 +133,6 @@ jobs:
           else
             echo "merge_conflicts=0" >> "$GITHUB_OUTPUT"
           fi
-
-      - name: Detect merge conflicts
-        if: steps.check.outputs.has_changes == '1'
-        id: conflicts
-        env:
-          STEPS_CRUFT_UPDATE_OUTPUTS_MERGE_CONFLICTS: ${{ steps.cruft_update.outputs.merge_conflicts }}
-        run: |
-          MERGE_CONFLICTS="${STEPS_CRUFT_UPDATE_OUTPUTS_MERGE_CONFLICTS}"
-          # Also check for conflict markers in any tracked file
-          if git grep -l '^<<<<<<< ' 2>/dev/null; then
-            MERGE_CONFLICTS=1
-          fi
-          echo "merge_conflicts=$MERGE_CONFLICTS" >> "$GITHUB_OUTPUT"
 
       - name: Check if only .cruft.json is modified
         if: steps.check.outputs.has_changes == '1'
@@ -172,6 +145,19 @@ jobs:
           else
             echo "has_changes=1" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Detect merge conflicts
+        id: conflicts
+        if: steps.cruft_json.outputs.has_changes == '1'
+        env:
+          STEPS_CRUFT_UPDATE_OUTPUTS_MERGE_CONFLICTS: ${{ steps.cruft_update.outputs.merge_conflicts }}
+        run: |
+          MERGE_CONFLICTS="${STEPS_CRUFT_UPDATE_OUTPUTS_MERGE_CONFLICTS}"
+          # Also check for conflict markers in any tracked file
+          if git grep -l '^<<<<<<< ' 2>/dev/null; then
+            MERGE_CONFLICTS=1
+          fi
+          echo "merge_conflicts=$MERGE_CONFLICTS" >> "$GITHUB_OUTPUT"
 
       # There is already an open PR, so its branch just needs a new commit.
       # create-pull-request is not used here because it resets the
@@ -300,6 +286,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       summary: ${{ steps.build-summary.outputs.summary }}
+    permissions: {}
 
     steps:
       - name: Download status artifacts
@@ -360,7 +347,6 @@ jobs:
     needs: [update, setup, collate]
     runs-on: ubuntu-latest
     permissions:
-      contents: read
       issues: write
 
     steps:

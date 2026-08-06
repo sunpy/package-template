@@ -135,7 +135,6 @@ jobs:
           fi
 
       - name: Check if only .cruft.json is modified
-        if: steps.check.outputs.has_changes == '1'
         id: cruft_json
         run: |
           git status --porcelain=1

@@ -137,6 +137,7 @@ def bake_examples_url_extensions(cookies):
             "documentation_url": "https://sunpy.org/docs",
             "changelog_url": "https://sunpy.org/changelog",
             "issue_tracker_url": "https://github.com/sunpy/sunpy/issues",
+            "use_repo_workflow_for_updates": "n",
         }
     )
     return _handle_cookiecutter_errors(result)

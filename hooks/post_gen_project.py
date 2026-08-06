@@ -46,6 +46,10 @@ if __name__ == '__main__':
     process_github_workflow('{{ cookiecutter.include_cruft_update_github_workflow }}')
     include_examples = '{{ cookiecutter.include_example_code }}' == 'y'
     use_compiled = '{{ cookiecutter.use_compiled_extensions }}' == 'y'
+    use_sub_package_update = '{{ cookiecutter.use_repo_workflow_for_updates }}' == 'y'
+
+    if not use_sub_package_update:
+        remove_file('.github/workflows/sub_package_update.yml')
 
     if not(include_examples and use_compiled):
         remove_file('{{ cookiecutter.module_name }}/example_c.pyx')

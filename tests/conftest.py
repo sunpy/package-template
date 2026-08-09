@@ -117,6 +117,7 @@ def bake_examples_compiled_dev_version(cookies):
             "use_extended_ruff_linting": "y",
             "download_url": "https://github.com/sunpy/sunpy/archive/master.zip",
             "issue_tracker_url": "https://github.com/sunpy/sunpy/issues",
+            "extra_ci_jobs": "online,threading",
         }
     )
     return _handle_cookiecutter_errors(result)

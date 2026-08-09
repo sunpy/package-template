@@ -6,7 +6,6 @@ min_age:
   always: false # allow early updates
 separator: "  # "
 files:
-  - pattern: .github/workflows/*.yml
   - pattern: "{{ cookiecutter.package_name }}/.github/workflows/*.yml"
 
 # rules:

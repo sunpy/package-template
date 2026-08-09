@@ -27,6 +27,9 @@ jobs:
         with:
           skip_push: "true"
           config: .pinact.yaml
+          update: true
+          fix: true
+          verify: true
 
       - name: Create pull request
         if: '!cancelled()'

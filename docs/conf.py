@@ -4,21 +4,11 @@
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-# -- Path setup --------------------------------------------------------------
-
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
-
 # -- Project information -----------------------------------------------------
 
-project = 'OpenAstronomy Python Packaging Guide'
-copyright = '2019, OpenAstronomy Developers'
-author = 'OpenAstronomy Developers'
+project = 'SunPy Package Template'
+copyright = '2019, SunPy Developers'
+author = 'SunPy Developers'
 
 # -- General configuration ---------------------------------------------------
 
@@ -26,6 +16,8 @@ author = 'OpenAstronomy Developers'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.todo',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -38,6 +30,17 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # Treat everything in single ` as a Python reference.
 default_role = 'py:obj'
+
+# Render .. todo:: directives in the output.
+todo_include_todos = True
+
+# -- Intersphinx mapping -----------------------------------------------------
+
+intersphinx_mapping = {
+    'oa': ('https://packaging-guide.openastronomy.org/en/latest/', None),
+    'cookiecutter': ('https://cookiecutter.readthedocs.io/en/stable/', None),
+    'oagha': ('https://github-actions-workflows.openastronomy.org/en/stable/', None),
+}
 
 # -- Options for HTML output -------------------------------------------------
 

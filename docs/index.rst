@@ -11,7 +11,7 @@ These documentation pages will document the features added by the SunPy Template
    :maxdepth: 2
 
    getting_started
-   infrastructure
+   features
    linting
    ci
    changelog

@@ -24,7 +24,7 @@ The supported fragment types are:
 * ``trivial`` -- Internal Changes
 
 On release, ``towncrier build`` collects all fragments, groups them by type, and writes the result to ``CHANGELOG.rst`` with links back to the originating PRs.
-The rendered changelog is included in the documentation via `sphinx-changelog <https://sphinx-changelog.readthedocs.io>`__ (see :doc:`changelog` for the full workflow).
+The rendered changelog is included in the documentation via `sphinx-changelog <https://sphinx-changelog.readthedocs.io>`__.
 
 .. note::
 
@@ -61,23 +61,22 @@ It sets ``PIP_EXTRA_INDEX_URL`` to the astropy and scientific-python nightly whe
 For dependencies that do not publish nightly wheels, you can add a line such as ``devdeps: git+https://github.com/owner/repo`` to the ``deps`` section of ``tox.ini`` to build from source.
 
 This environment runs as part of the CI ``test`` job matrix (see :doc:`ci`).
-It provides early warning of breakage from upstream API or behaviour changes before they reach a stable release.
+It provides early warning of breakage from upstream API or behavior changes before they reach a stable release.
 
 
 Coverage Reporting with Codecov
 -------------------------------
 
 The template configures `Codecov <https://about.codecov.io>`__ as a way to see coverage reports for PRs and commits.
-
-The ``.codecov.yaml`` file configures options for the reporting, the ``tox.ini``, ``.coveragerc`` and ``ci.yml`` files also configure the behaviour of the coverage calculation and reporting.
+The ``.codecov.yaml`` file configures options for the reporting; the ``tox.ini``, ``.coveragerc``, and ``ci.yml`` files also configure the behavior of the coverage calculation and reporting.
 
 
 ReadTheDocs
 -----------
 
-The template generates a ``.readthedocs.yaml`` configured to build documentation on ReadTheDocs using a conda defined in ``.rtd-environment.yml``.
-This conda environment is used to install non-python dependencies such as graphviz.
-The Python dependancies are installed using the ``[docs]`` extra defined in ``pyproject.toml``.
+The template generates a ``.readthedocs.yaml`` configured to build documentation on ReadTheDocs using a conda environment defined in ``.rtd-environment.yml``.
+This conda environment is used to install non-Python dependencies such as graphviz.
+The Python dependencies are installed using the ``[docs]`` extra defined in ``pyproject.toml``.
 
 See also :ref:`oa:readthedocs` for ReadTheDocs fundamentals.
 

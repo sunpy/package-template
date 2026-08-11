@@ -6,7 +6,7 @@ Continuous Integration
 The template defines a single workflow ``ci.yml`` which runs all tests, builds distributions and pushes to PyPI.
 See :ref:`oa:ci` for CI fundamentals.
 
-This workflow makes heavy use of the open astronomy workflows for :ref:`tox <oagha:oa-ghaw-tox>` and publishing :ref:`pure Python packages <oagha:oa-ghaw-publish-pure>` and ones with :ref:`compiled extensions <oagha:oa-ghaw-publish>`.
+This workflow makes heavy use of the OpenAstronomy workflows for :ref:`tox <oagha:oa-ghaw-tox>` and publishing :ref:`pure Python packages <oagha:oa-ghaw-publish-pure>` and ones with :ref:`compiled extensions <oagha:oa-ghaw-publish>`.
 
 
 Jobs
@@ -16,7 +16,7 @@ Core
 ^^^^
 
 The core job is designed to gate the most expensive CI against a single test run.
-This should normally be the newest version of Python under a linux runner.
+This should normally be the newest version of Python under a Linux runner.
 
 Source dist verification
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -53,7 +53,7 @@ If you have compiled extensions, binary wheels for various platforms will be bui
 Publishing to PyPI
 ^^^^^^^^^^^^^^^^^^
 
-See also :ref:`oa:releasing` for release fundamentals and :doc:`releasing` for the template-specific automated process.
+See also :ref:`oa:releasing` for release fundamentals and :ref:`releasing` for the template-specific setup.
 
 Notifications
 ^^^^^^^^^^^^^

@@ -39,7 +39,7 @@ Ruff
 `Ruff <https://docs.astral.sh/ruff/>`__ is a fast Python linter that replaces flake8, pyupgrade, isort (partially), and numerous other tools.
 The template configures a base rule set covering pycodestyle errors and warnings, pyflakes, pyupgrade, and pytest-style rules.
 
-The ``use_extended_ruff_linting`` option (see :doc:`getting_started`) enables additional rule sets for bugbear, blind-except, comprehensions, implicit namespace packages, print statements, return statements, tidy imports, pathlib usage, pandas idioms, pylint conventions and errors, flynt, numpy, performance, and ruff-specific checks.
+The ``use_extended_ruff_linting`` option (see :doc:`new_package_options`) enables additional rule sets for bugbear, blind-except, comprehensions, implicit namespace packages, print statements, return statements, tidy imports, pathlib usage, pandas idioms, pylint conventions and errors, flynt, numpy, performance, and ruff-specific checks.
 This is recommended for new projects.
 
 Docstrings are checked against the numpy convention.

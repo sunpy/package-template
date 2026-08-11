@@ -14,10 +14,8 @@ These documentation pages will document the features added by the SunPy Template
    features
    linting
    ci
-   changelog
    updates
    releasing
-   advanced/index
 
 
 Topics Covered by the OpenAstronomy Guide

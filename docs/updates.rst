@@ -10,14 +10,14 @@ There are three main ways these updates are applied to your package:
 #. **Per-repo self-update** -- for affiliated packages outside the SunPy GitHub org (opt-in via ``include_cruft_update_github_workflow`` option)
 #. **Manual cruft run** -- You can always run ``cruft update`` at the CLI to pull updates.
 
-The choice between the per-repo and centralised updater is based on if your package lives in the sunpy GitHub organization.
+The choice between the per-repo and centralised updater is based on whether your package lives in the SunPy GitHub organization.
 
 
 Centralised updater (SunPy org packages)
 ----------------------------------------
 
-If you package lives under the sunpy org, you should have it listed in the ``centralised_cruft_update.yml`` workflow file in the template repo.
-Only the sunpy org repos are supported for this because of github token permissions.
+If your package lives under the SunPy org, you should have it listed in the ``centralised_cruft_update.yml`` workflow file in the template repo.
+Only SunPy org repos are supported for this because of GitHub token permissions.
 
 The workflow runs whenever there is an update to the template, if an existing update PR is open then it will be updated else, a new one will be opened.
 If there are cruft update conflicts the PR will be opened as a draft.
@@ -27,21 +27,21 @@ It is always worth bearing in mind that the less you deviate from the template t
 Per-repo self-update
 --------------------
 
-If your repo isn't under the sunpy org then you can enable the ``include_cruft_update_github_workflow`` option.
+If your repo isn't under the SunPy org then you can enable the ``include_cruft_update_github_workflow`` option.
 This workflow runs weekly, or on demand, and pulls the latest changes into your package.
-If this workflow fails, it should open an issue on your repo to help you remember to debug the faliure.
+If this workflow fails, it should open an issue on your repo to help you remember to debug the failure.
 
 Finally, there is an option when manually triggering the workflow to specify variables to update as a json string, see `Updating Values of Template Variables <https://cruft.github.io/cruft/#updating-values-of-template-variables>`__ in the cruft documentation.
 
 Using a PAT for workflow file updates
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-It's highly recommended to configure this repo with a `GitHub PAT <https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens?apiVersion=2026-03-10&versionId=free-pro-team%40latest#creating-a-fine-grained-personal-access-token>`__ with permissions to push to your repo and including the ``workflow`` permission.
-This is because frequent updates to the workflow files are pushed via the templates and the default GitHub Actions ``GITHUB_TOKEN`` does not and can not have permissions to edit the workflow files.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+It's highly recommended to configure this repo with a `GitHub PAT <https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens?apiVersion=2026-03-10&versionId=free-pro-team%40latest#creating-a-fine-grained-personal-access-token>`__ with permissions to push to your repo including the ``workflow`` permission.
+This is because frequent updates to the workflow files are pushed via the template and the default GitHub Actions ``GITHUB_TOKEN`` does not and can not have permissions to edit the workflow files.
 
 The use of a PAT is covered by the ``use_pat_in_cruft_update_workflow`` option, which defaults to on when using the per-repo update workflow.
 This PAT should have read and write access for the ``Contents`` and ``Workflows`` permissions.
 
-You should then `create a github environment <https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments>`__ named ``sub_package_update``, configure it to only deploy on the main branch, and then add a ``WORKFLOWS_UPDATE_PAT`` secret.
+You should then `create a GitHub environment <https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments>`__ named ``sub_package_update``, configure it to only deploy on the main branch, and then add a ``WORKFLOWS_UPDATE_PAT`` secret.
 
 
 Dependabot interaction

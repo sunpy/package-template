@@ -3,7 +3,7 @@
 Template Updates
 ================
 
-The package template uses `cruft <>`__ to apply incremental updates.
+The package template uses `cruft <https://cruft.github.io/cruft/>`__ to apply incremental updates.
 There are three main ways these updates are applied to your package:
 
 #. **Centralised updater** -- for packages in the SunPy GitHub org (runs from this template repository)

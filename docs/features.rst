@@ -6,17 +6,6 @@ Template Features
 This page documents the key features the template provides beyond the :doc:`OpenAstronomy guide <oa:index>`, which do not have other dedicated sections of the documentation.
 For file-by-file details, consult the generated package directly.
 
-
-Changelog Checks with Gilesbot
-------------------------------
-
-The template integrates `Gilesbot <https://github.com/Cadair/giles>`__, a GitHub bot that checks changelog entries on every pull request.
-Configuration lives in the ``[tool.gilesbot]`` table in ``pyproject.toml``.
-
-When a PR is opened, Gilesbot checks for a changelog fragment in the ``changelog/`` directory.
-The ``verify_pr_number`` setting ensures the fragment's filename matches the PR number.
-PRs that do not need a changelog entry can be labelled ``No Changelog Entry Needed`` to skip the check.
-
 Changelog Management with Towncrier
 -----------------------------------
 
@@ -40,6 +29,17 @@ The rendered changelog is included in the documentation via `sphinx-changelog <h
 .. note::
 
    The ``[tool.towncrier]`` configuration lives in ``pyproject.toml`` rather than ``towncrier.toml`` because Gilesbot only reads ``pyproject.toml``.
+
+
+Changelog Checks with Gilesbot
+------------------------------
+
+The template integrates `Gilesbot <https://github.com/Cadair/giles>`__, a GitHub bot that checks changelog entries on every pull request.
+Configuration lives in the ``[tool.gilesbot]`` table in ``pyproject.toml``.
+
+When a PR is opened, Gilesbot checks for a changelog fragment in the ``changelog/`` directory.
+The ``verify_pr_number`` setting ensures the fragment's filename matches the PR number.
+PRs that do not need a changelog entry can be labelled ``No Changelog Entry Needed`` to skip the check.
 
 
 Oldest Dependencies Testing

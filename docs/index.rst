@@ -10,7 +10,7 @@ These documentation pages will document the features added by the SunPy Template
 .. toctree::
    :maxdepth: 2
 
-   getting_started
+   new_package_options
    features
    linting
    ci

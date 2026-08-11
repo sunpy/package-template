@@ -67,7 +67,7 @@ These are y/n that toggle features on or off.
   See also :ref:`oa:extensions`.
 * ``enable_dynamic_dev_versions`` -- Enables dynamic development version calculation via ``setuptools_scm`` so that ``my_package.__version__`` reflects the current git state during editable installs.
   Generates a ``_dev`` subpackage and ``version.py`` shim.
-  See :doc:`advanced/versioning`.
+  See :ref:`oa:versions`.
 * ``include_example_code`` -- Generates example modules (``example_mod.py``, ``example_c.pyx`` when combined with ``use_compiled_extensions``), an example subpackage, data files, and tests.
 * ``include_cruft_update_github_workflow`` -- Generates the per-repo ``sub_package_update.yml`` workflow that runs ``cruft update`` weekly and opens a PR.
   Intended for affiliated packages outside the SunPy GitHub org; packages in the SunPy org are updated centrally.

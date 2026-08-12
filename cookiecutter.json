@@ -37,7 +37,8 @@
     "_install_requires": "",
     "_copy_without_render": [
         "docs/_templates",
-        "docs/_static"
+        "docs/_static",
+        ".github/workflows/zizmor.yml"
     ],
     "__prompts__" : {
         "project_url": "Primary website for the project, leave blank for Sunpy Homepage",

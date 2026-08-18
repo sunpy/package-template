@@ -140,6 +140,7 @@ def bake_examples_url_extensions(cookies):
             "issue_tracker_url": "https://github.com/sunpy/sunpy/issues",
             "include_cruft_update_github_workflow": "y",
             "use_pat_in_cruft_update_workflow": "y",
+            "use_sunpy_pr_template": "y",
         }
     )
     return _handle_cookiecutter_errors(result)

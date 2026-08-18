@@ -40,10 +40,17 @@ def process_github_workflow(include_cruft_update_github_workflow):
         remove_file(os.path.join(PROJECT_DIRECTORY,  '.github', 'workflows', 'sub_package_update.yml'))
 
 
+def process_sunpy_pr_template(include_sunpy_pr_template):
+    if include_sunpy_pr_template != "y":
+        remove_file(os.path.join(PROJECT_DIRECTORY,  '.github', 'PULL_REQUEST_TEMPLATE.md'))
+
+
 if __name__ == '__main__':
     process_license('{{ cookiecutter.license }}')
     process_version('{{ cookiecutter.enable_dynamic_dev_versions }}')
     process_github_workflow('{{ cookiecutter.include_cruft_update_github_workflow }}')
+    process_sunpy_pr_template('{{ cookiecutter.use_sunpy_pr_template }}')
+
     include_examples = '{{ cookiecutter.include_example_code }}' == 'y'
     use_compiled = '{{ cookiecutter.use_compiled_extensions }}' == 'y'
 

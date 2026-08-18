@@ -34,6 +34,8 @@ Please also include relevant motivation and context.
 
 <!--
 To support transparency and sustainable collaboration, please indicate whether AI-assisted tools were used in preparing this pull request.
+Your pull request will not be reviewed until you have completed this checklist.
+Removing this checklist may result in your pull request being automatically closed without a review.
 For further details see our documentation on the fair and appropriate [usage of AI](https://docs.sunpy.org/en/latest/dev_guide/contents/ai_usage.html).
 -->
 

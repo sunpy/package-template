@@ -251,6 +251,21 @@ jobs:
         run: |
           gh pr edit "$PR_NUMBER" --repo "$REPO_FULL" --body-file "$BODY_PATH"
 
+      - name: Mark existing PR as draft if conflicts
+        if: steps.cruft_json.outputs.has_changes == '1' &&
+            steps.existing.outputs.existing_pr != '0' &&
+            steps.conflicts.outputs.merge_conflicts == '1'
+        env:
+          GH_TOKEN: ${{ secrets.BOT_PR_PAT }}
+          PR_NUMBER: ${{ steps.existing.outputs.existing_pr }}
+        run: |
+          if [ "$(gh pr view "$PR_NUMBER" --repo "$REPO_FULL" --json isDraft --jq '.isDraft')" = "true" ]; then
+            echo "PR #${PR_NUMBER} is already a draft"
+            exit 0
+          fi
+          gh pr ready --undo "$PR_NUMBER" --repo "$REPO_FULL"
+          echo "Marked PR #${PR_NUMBER} as draft due to conflicts"
+
       # No open PR, so build the branch on the fork from scratch and open one.
       # maintainer-can-modify must be false as BOT_PR_PAT has no write access to
       # the fork; the allow-edits job turns it on afterwards.

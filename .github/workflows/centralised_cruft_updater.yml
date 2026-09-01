@@ -220,7 +220,7 @@ jobs:
             fi
           } > pr_body.md
 
-          echo "path=$(pwd)/pr_body.md" >> "$GITHUB_OUTPUT"
+          echo "path=$RUNNER_TEMP/pr_body.md" >> "$GITHUB_OUTPUT"
 
       # There is already an open PR, so its branch just needs a new commit.
       # create-pull-request is not used here because it resets the

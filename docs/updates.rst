@@ -23,6 +23,7 @@ The workflow runs whenever there is an update to the template, if an existing up
 If there are cruft update conflicts the PR will be opened as a draft.
 The best way to fix cruft conflicts is to edit the files using the GitHub web UI, as generally they are easy to change.
 It is always worth bearing in mind that the less you deviate from the template the less conflicts are likely to occur.
+If you want to discard the changes on an open update PR (e.g. manual conflict fixes that have gone wrong), you can run the workflow manually with the ``recreate`` option, which closes any open update PRs and recreates them from the upstream default branch.
 
 Per-repo self-update
 --------------------

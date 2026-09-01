@@ -22,6 +22,11 @@ on:
         required: false
         default: ''
         type: string
+      recreate:
+        description: 'Close any open update PRs and recreate them from scratch (discards manual conflict fixes on the branch)'
+        required: false
+        default: false
+        type: boolean
   schedule:
     #        ┌───────── minute (0 - 59)
     #        │ ┌───────── hour (0 - 23)
@@ -94,6 +99,7 @@ jobs:
         id: existing
         env:
           GH_TOKEN: ${{ secrets.BOT_FORK_PAT }}
+          RECREATE: ${{ inputs.recreate }}
         run: |
           REPO_NAME="${REPO_FULL#*/}"
           FORK_REPO="${BOT}/${REPO_NAME}"
@@ -108,6 +114,15 @@ jobs:
           # Check if there's an open PR from this branch
           EXISTING_PR=$(gh pr list --repo "$REPO_FULL" --head "$BRANCH" --state open --author "$BOT" --json number --jq '.[0].number // 0')
 
+          # In a recreate run always start fresh: deleting the fork branch
+          # below also closes any open PR from it (GitHub closes a PR when
+          # its head branch is deleted). This search-backed listing may
+          # still report that PR as open, so ignore it here.
+          if [ "$RECREATE" = "true" ]; then
+            echo "Recreate requested, starting fresh from the upstream default branch"
+            EXISTING_PR=0
+          fi
+
           # An open PR may carry manual conflict fixes, so keep building on its
           # branch. With no open PR we start clean from the upstream default
           # branch and let create-pull-request manage the branch on the fork.
@@ -118,9 +133,12 @@ jobs:
           else
             echo "No open PR, starting from ${REPO_FULL} default branch"
 
-            # Any branch left over from a closed PR is stale. create-pull-request
-            # cannot reconcile it against a fresh checkout of the upstream
-            # default branch, so delete it and let the action recreate it.
+            # The fork branch (if any) is stale at this point: either left
+            # over from a closed PR, or from the open PR of a recreate run
+            # (deleting the branch also closes that PR). create-pull-request
+            # cannot reconcile an existing branch against a fresh checkout of
+            # the upstream default branch, so delete it and let the action
+            # recreate it.
             if gh api "repos/${FORK_REPO}/git/ref/heads/${BRANCH}" >/dev/null 2>&1; then
               echo "Deleting stale ${BRANCH} on ${FORK_REPO}"
               gh api -X DELETE "repos/${FORK_REPO}/git/refs/heads/${BRANCH}"

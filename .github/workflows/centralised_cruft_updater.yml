@@ -228,8 +228,14 @@ jobs:
             # A bare #123 in a template commit message refers to the template
             # repo, but would render as a link to the package repo when posted
             # in a PR body, so qualify each reference with the template repo.
+            # Note that gh api --jq runs gojq, whose regexes are RE2 and so
+            # do not support lookbehind: match (and re-emit) the character
+            # before the reference instead.
             COMMIT_LOG=$(gh api "repos/${TEMPLATE_REPO}/compare/${OLD_COMMIT}...${NEW_COMMIT}" \
-              --jq '.commits[] | "- [" + .sha[0:7] + "](" + .html_url + ") " + (.commit.message | split("\n")[0] | gsub("(?<![\\w/#])#(?<n>[0-9]+)"; env.TEMPLATE_REPO + "#" + .n))' 2>/dev/null || echo "")
+              --jq '.commits[] | "- [" + .sha[0:7] + "](" + .html_url + ") " + (.commit.message | split("\n")[0] | gsub("(?<c>^|[^\\w/#])#(?<n>[0-9]+)"; .c + env.TEMPLATE_REPO + "#" + .n))' 2>/dev/null || echo "")
+            if [ -z "$COMMIT_LOG" ]; then
+              echo "::warning::Failed to generate the commit log; the PR body will not list the template changes"
+            fi
           fi
 
           # The body file must live outside the checkout (RUNNER_TEMP) so

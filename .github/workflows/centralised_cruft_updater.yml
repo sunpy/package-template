@@ -22,6 +22,13 @@ on:
         required: false
         default: ''
         type: string
+  schedule:
+    #        ┌───────── minute (0 - 59)
+    #        │ ┌───────── hour (0 - 23)
+    #        │ │ ┌───────── day of the month (1 - 31)
+    #        │ │ │ ┌───────── month (1 - 12 or JAN-DEC)
+    #        │ │ │ │ ┌───────── day of the week (0 - 6 or SUN-SAT)
+    - cron: '0 8 * * 3'  # Every Wednesday at 8am UTC
 
 concurrency:
   group: cruft-update
@@ -250,7 +257,11 @@ jobs:
       - name: Create Pull Request if needed
         id: create_pr
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
-        if: steps.cruft_json.outputs.has_changes == '1' && steps.existing.outputs.existing_pr == '0'
+        # Only open a PR on schedule or manual run not merge to main.
+        # On merge to main existing PRs are updated
+        if: steps.cruft_json.outputs.has_changes == '1' &&
+            steps.existing.outputs.existing_pr == '0' &&
+            (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
         with:
           token: ${{ secrets.BOT_PR_PAT }}
           branch-token: ${{ secrets.BOT_FORK_PAT }}

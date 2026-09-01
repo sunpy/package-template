@@ -219,15 +219,22 @@ jobs:
         if: steps.cruft_json.outputs.has_changes == '1'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TEMPLATE_REPO: ${{ github.repository }}
           OLD_COMMIT: ${{ steps.cruft_update.outputs.old_commit }}
           NEW_COMMIT: ${{ steps.cruft_update.outputs.new_commit }}
         run: |
           COMMIT_LOG=""
           if [ -n "$OLD_COMMIT" ] && [ -n "$NEW_COMMIT" ] && [ "$OLD_COMMIT" != "$NEW_COMMIT" ]; then
-            COMMIT_LOG=$(gh api "repos/${{ github.repository }}/compare/${OLD_COMMIT}...${NEW_COMMIT}" \
-              --jq '.commits[] | "- [" + .sha[0:7] + "](" + .html_url + ") " + (.commit.message | split("\n")[0])' 2>/dev/null || echo "")
+            # A bare #123 in a template commit message refers to the template
+            # repo, but would render as a link to the package repo when posted
+            # in a PR body, so qualify each reference with the template repo.
+            COMMIT_LOG=$(gh api "repos/${TEMPLATE_REPO}/compare/${OLD_COMMIT}...${NEW_COMMIT}" \
+              --jq '.commits[] | "- [" + .sha[0:7] + "](" + .html_url + ") " + (.commit.message | split("\n")[0] | gsub("(?<![\\w/#])#(?<n>[0-9]+)"; env.TEMPLATE_REPO + "#" + .n))' 2>/dev/null || echo "")
           fi
 
+          # The body file must live outside the checkout (RUNNER_TEMP) so
+          # that neither git add -A below nor create-pull-request can ever
+          # commit it to the PR branch.
           {
             echo "$PR_BODY"
             if [ -n "$COMMIT_LOG" ]; then
@@ -236,7 +243,7 @@ jobs:
               echo ""
               echo "$COMMIT_LOG"
             fi
-          } > pr_body.md
+          } > "$RUNNER_TEMP/pr_body.md"
 
           echo "path=$RUNNER_TEMP/pr_body.md" >> "$GITHUB_OUTPUT"
 

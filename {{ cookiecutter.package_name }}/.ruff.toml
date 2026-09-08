@@ -16,6 +16,7 @@ select = [
   "PT",
   "I",
   {%- if cookiecutter.use_extended_ruff_linting == 'y' %}
+  "B",
   "BLE",
   "A",
   "C4",
@@ -34,7 +35,7 @@ select = [
   "RUF",
   {%- endif %}
 ]
-extend-ignore = [
+ignore = [
   # pycodestyle (E, W)
   "E501", # ignore line length will use a formatter instead
   # pytest (PT)

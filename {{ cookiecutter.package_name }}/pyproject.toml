@@ -1,10 +1,10 @@
 [build-system]
 requires = [
   "setuptools>=62.1",
-  "setuptools_scm[toml]>=8.0.0",
+  "setuptools_scm[toml]>=8.0.1",
 {%- if cookiecutter.use_compiled_extensions == 'y' %}
-  "extension-helpers",
-  "numpy>=1.25",
+  "extension-helpers>=1.4,<2",
+  "numpy>=2.0.0rc1",
   "cython",
 {%- endif %}
 ]

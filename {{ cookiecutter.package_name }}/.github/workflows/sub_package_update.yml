@@ -23,7 +23,7 @@ permissions: {}
 
 jobs:
   update:
-    if: ${{ !github.event.repository.fork }}
+    if: {{ "${{ !github.event.repository.fork }}" }}
     runs-on: ubuntu-latest
     permissions:
       {%- if cookiecutter.use_pat_in_cruft_update_workflow == "n" %}

@@ -6,8 +6,9 @@ on:
   pull_request:
     branches: ["**"]
   # Rescan weekly: an action can be disclosed as vulnerable while the repository is quiet.
+  # Not on the hour: GitHub delays or drops scheduled runs at the start of each hour.
   schedule:
-    - cron: "0 7 * * 1"
+    - cron: "17 7 * * 1"
 
 permissions: {}
 

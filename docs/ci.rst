@@ -27,6 +27,9 @@ Test
 ^^^^
 
 The test job runs the rest of the tests once the ``core`` and ``sdist_verify`` jobs have succeeded.
+``sdist_verify`` validates ``pyproject.toml``, builds the source distribution and runs
+``twine check --strict`` on it, the metadata check PyPI applies at upload time,
+so a metadata problem fails the pull request rather than the release.
 The jobs you put here should **always pass** as your package will not release if this job fails, so any online jobs or other flakey builds should probably be in an extra job.
 
 Documentation

@@ -14,7 +14,7 @@ permissions: {}
 
 jobs:
   test:
-    uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@3a3dcf3ba6828dac29eba10334948ef38364ed14 # v3.1.0
+    uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@8c9f6c4af6750aa4b26765e8c312164efc226dfd # v3.2.0
     with:
       envs: |
         - macos: py312-test
@@ -23,7 +23,7 @@ jobs:
         - linux: build_docs
 
   bake_cookies:
-    uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@3a3dcf3ba6828dac29eba10334948ef38364ed14 # v3.1.0
+    uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@8c9f6c4af6750aa4b26765e8c312164efc226dfd # v3.2.0
     with:
       artifact-path: |
         cookies

@@ -1,4 +1,7 @@
-# Main CI Workflow {%- set default_python = '3.13' %}
+# Main CI Workflow
+{%- set pys = cookiecutter.supported_python_versions.split(',') | map('trim') | list %}
+{%- set default_python = pys[-2] %}
+{%- set cp_tags = pys | map('replace', '.', '') | join(',') %}
 name: CI
 
 on:
@@ -40,7 +43,7 @@ jobs:
       coverage: codecov-oidc
       toxdeps: tox-pypi-filter
       envs: |
-        - linux: py313
+        - linux: py{{ default_python | replace('.', '') }}
 
   sdist_verify:
     runs-on: ubuntu-latest
@@ -67,11 +70,13 @@ jobs:
       toxdeps: tox-pypi-filter
       posargs: -n auto
       envs: |
-        - linux: py314
-        - windows: py312
-        - macos: py312
-        - linux: py312-oldestdeps
-        - linux: py314-devdeps
+{%- for v in pys[1:] %}
+        - linux: py{{ v | replace('.', '') }}
+{%- endfor %}
+        - windows: py{{ pys | first | replace('.', '') }}
+        - macos: py{{ pys[1] | replace('.', '') }}
+        - linux: py{{ pys | first | replace('.', '') }}-oldestdeps
+        - linux: py{{ pys | last | replace('.', '') }}-devdeps
 
   docs:
     needs: [core]
@@ -99,7 +104,7 @@ jobs:
       toxdeps: tox-pypi-filter
       coverage: codecov-oidc
       envs: |
-  {% endfor -%}
+{% endfor -%}
   {%- endif %}
 
   build_dists:
@@ -117,10 +122,10 @@ jobs:
     with:
       sdist: true
       targets: |
-        - cp3{12,13,14}-manylinux*_x86_64
-        - cp3{12,13,14}-macosx_x86_64
-        - cp3{12,13,14}-macosx_arm64
-        - cp3{12,13,14}-win_amd64
+        - cp{{ '{' ~ cp_tags ~ '}' }}-manylinux*_x86_64
+        - cp{{ '{' ~ cp_tags ~ '}' }}-macosx_x86_64
+        - cp{{ '{' ~ cp_tags ~ '}' }}-macosx_arm64
+        - cp{{ '{' ~ cp_tags ~ '}' }}-win_amd64
 {%- else %}
     uses: OpenAstronomy/github-actions-workflows/.github/workflows/publish_pure_python.yml@1285b95e32c783cfa40eb2ffbd6ca4cd023fb884  # v3.2.2
     with:

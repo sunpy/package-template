@@ -1,4 +1,4 @@
-target-version = "py{{ cookiecutter.minimum_python_version | replace(".", "")}}"
+target-version = "py{{ cookiecutter.supported_python_versions.split(',') | first | trim | replace(".", "")}}"
 line-length = 120
 exclude = [
   ".git,",

@@ -55,8 +55,8 @@ These options have no default (or a placeholder default) and must be answered wh
 * ``license`` -- The SPDX license for the package.
   Choices: ``BSD 3-Clause`` (default), ``GNU GPL v3+``, ``Apache Software License 2.0``, ``BSD 2-Clause``, ``Other``.
   The corresponding license text is copied to ``licenses/LICENSE.rst``.
-* ``minimum_python_version`` -- The minimum supported Python version, written to ``requires-python`` in ``pyproject.toml`` and used in CI and tox configuration.
-  Choices: ``3.11`` (default), ``3.12``, ``3.13``, ``3.14``.
+* ``supported_python_versions`` -- Comma-separated list of Python versions to test (e.g. ``3.12, 3.13, 3.14``).
+  The first entry is the lowest supported version for the package.
 
 Optional features
 ^^^^^^^^^^^^^^^^^

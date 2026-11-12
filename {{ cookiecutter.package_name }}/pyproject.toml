@@ -13,9 +13,16 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "{{ cookiecutter.module_name }}"
 description = "{{ cookiecutter.short_description }}"
-requires-python = ">={{ cookiecutter.minimum_python_version }}"
+requires-python = ">={{ cookiecutter.supported_python_versions.split(',') | first | trim }}"
 readme = { file = "README.rst", content-type = "text/x-rst" }
 license-files = ["licenses/LICENSE.rst"]
+classifiers = [
+{%- for v in cookiecutter.supported_python_versions.split(',') %}
+  "Programming Language :: Python :: {{ v | trim }}",
+{%- endfor %}
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: Implementation :: CPython",
+]
 {%- if cookiecutter.author_name and cookiecutter.author_email %}
 authors = [
   { name = "{{ cookiecutter.author_name }}", email = "{{ cookiecutter.author_email }}" },

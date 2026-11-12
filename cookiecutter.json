@@ -18,12 +18,7 @@
         "BSD 2-Clause",
         "Other"
     ],
-    "minimum_python_version": [
-        "3.11",
-        "3.12",
-        "3.13",
-        "3.14"
-    ],
+    "supported_python_versions": "3.12, 3.13, 3.14",
     "use_compiled_extensions": "n",
     "enable_dynamic_dev_versions": "n",
     "include_example_code": "n",
@@ -49,6 +44,7 @@
         "documentation_url": "Documentation URL, optional",
         "changelog_url": "URL to the changelog, optional",
         "issue_tracker_url": "URL to the issue tracker, optional",
-        "matrix_room_id": "A room ID to enable matrix notifications in the CI workflow."
+        "matrix_room_id": "A room ID to enable matrix notifications in the CI workflow.",
+        "supported_python_versions": "Comma-separated list of Python versions to test (e.g. '3.12, 3.13, 3.14'). The first sets the install floor; the last is used for devdeps and the cruft-update runner."
     }
 }

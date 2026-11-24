@@ -70,8 +70,11 @@ jobs:
       toxdeps: tox-pypi-filter
       posargs: -n auto
       envs: |
-{%- for v in pys[1:] %}
+{%- for v in pys[1:] -%}
+  {# Skip the default python on linux as it's the core test #}
+  {%- if v != default_python %}
         - linux: py{{ v | replace('.', '') }}
+  {%- endif -%}
 {%- endfor %}
         - windows: py{{ pys | first | replace('.', '') }}
         - macos: py{{ pys[1] | replace('.', '') }}

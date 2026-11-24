@@ -16,7 +16,8 @@ Core
 ^^^^
 
 The core job is designed to gate the most expensive CI against a single test run.
-This should normally be the newest version of Python under a Linux runner.
+This should normally be the second-newest version of Python under a Linux runner.
+We run this with the second-newest supported version as when adding a new version of Python sometimes dependencies have to be compiled, which can slow down this build.
 
 Source dist verification
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -28,6 +29,15 @@ Test
 
 The test job runs the rest of the tests once the ``core`` and ``sdist_verify`` jobs have succeeded.
 The jobs you put here should **always pass** as your package will not release if this job fails, so any online jobs or other flakey builds should probably be in an extra job.
+The default build matrix for this job is:
+
+  - All versions of Python with default deps on linux (apart from the second newest version, which is core).
+  - The oldest version on windows.
+  - The second oldest on macos.
+  - The oldest version with oldestdeps on linux.
+  - The newest version with devdeps on linux.
+
+We run older versions on macos and Windows, because sometimes these lag in pre-compiled builds.
 
 Documentation
 ^^^^^^^^^^^^^

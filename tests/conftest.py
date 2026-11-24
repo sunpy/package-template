@@ -118,6 +118,7 @@ def bake_examples_compiled_dev_version(cookies):
             "download_url": "https://github.com/sunpy/sunpy/archive/master.zip",
             "issue_tracker_url": "https://github.com/sunpy/sunpy/issues",
             "extra_ci_jobs": "online,threading",
+            "supported_python_versions": "3.12, 3.13, 3.14, 3.15",  # Want a test with more supported versions
         }
     )
     return _handle_cookiecutter_errors(result)
